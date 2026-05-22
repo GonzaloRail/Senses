@@ -1,0 +1,453 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // SUPABASE
+  //directUrl = env("DIRECT_URL")
+}
+
+enum RoleType {
+  ADMIN
+  ADMISSION
+  PSYCHOLOGIST
+  INTERNAL
+}
+
+enum DocumentType {
+  CLINICAL_HISTORY
+  USER_DOCS
+  TEMPLATE
+  EVALUATION_TEST
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  WIDOWED
+  DIVORCED
+  COHABITANT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  LGBTQ
+  NOT_SPECIFIED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CANCELED
+  DONE
+  IN_PROGRESS
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AppointmentType {
+  PARTICULAR
+  SOCIAL
+}
+
+model Evaluation {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true) // Managers can deactivate evaluations
+
+  // Who created this evaluation (likely a Manager)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  tests Test[] // Many tests belong to one evaluation
+
+  openNewSection Boolean @default(false)
+  sectionOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Test {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  // Store the template's content. Can be JSON, or a URL to a template file.
+  //templateContent String // e.g., JSON string for dynamic forms, or URL to a .docx/.pdf template file
+  document    Document?
+
+  isActive Boolean @default(true) // Managers can deactivate templates
+
+  // Who created this template (likely a Manager)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  // Relation to the general Evaluation it belongs to
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+
+  // Relation to completed tests based on this template
+  patientTests PatientTest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PatientTest {     
+  id     String @id @default(uuid())
+  // Reference to the original template
+  testId String
+  test   Test   @relation(fields: [testId], references: [id])
+
+  // Reference to the patient's clinical history
+  clinicalHistoryId String
+  clinicalHistory   ClinicalHistory @relation(fields: [clinicalHistoryId], references: [id])
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  // The actual filled-out data by the psychologist
+  // completedContent String // e.g., JSON string with answers, or URL to the completed document file
+  document Document?
+
+  isGeneralDoc Boolean @default(false)
+
+  // Who completed this test
+  completedById String // Should be a PSYCHOLOGIST
+  completedBy   User   @relation(fields: [completedById], references: [id])
+
+  completedAt DateTime @default(now())
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    AppointmentStatus @default(PENDING)
+
+  officeId String
+  office   Office @relation(fields: [officeId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  patientTests PatientTest[]
+  type         AppointmentType @default(PARTICULAR)
+}
+
+model Patient {
+  id                 String        @id @default(uuid())
+  firstName          String
+  lastName           String
+  dni                String        @unique @db.VarChar(8)
+  gender             Gender
+  birthdate          DateTime
+  educationLevel     String
+  birthPlace         String
+  occupation         String
+  address            String
+  maritalStatus      MaritalStatus
+  religion           String?
+  occupationLocation String
+  phoneNumber        String
+  isActive           Boolean       @default(true)
+
+  parentFullName    String?
+  parentDni         String? @db.VarChar(8)
+  parentPhoneNumber String?
+
+  districtId String
+  district   District @relation(fields: [districtId], references: [id])
+
+  psychologistId String?
+  psychologist   User?   @relation(fields: [psychologistId], references: [id])
+
+  clinicalHistoryId String          @unique
+  clinicalHistory   ClinicalHistory @relation(fields: [clinicalHistoryId], references: [id])
+
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClinicalHistory {
+  id         String @id @default(uuid())
+  displayInt Int    @default(autoincrement())
+
+  patientTests PatientTest[]
+
+  patient Patient?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id    String     @id @default(uuid())
+  name  RoleType
+  users UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+model Item {
+  id          String  @id @default(uuid())
+  name        String
+  quantity    Int     @default(0)
+  description String?
+  isActive    Boolean @default(true)
+
+  items ItemInstance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ItemInstance {
+  id         String @id @default(uuid())
+  displayInt Int    @default(autoincrement())
+
+  officeId String?
+  office   Office? @relation(fields: [officeId], references: [id])
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model District {
+  id   String @id @default(uuid())
+  name String
+
+  provinceId String
+  province   Province @relation(fields: [provinceId], references: [id])
+
+  locations Location[]
+
+  patients Patient[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Province {
+  id   String @id @default(uuid())
+  name String
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id])
+
+  districts District[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Region {
+  id   String @id
+  name String
+
+  provinces Province[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id       String  @id @default(uuid())
+  name     String
+  isActive Boolean @default(true)
+  address  String
+
+  districtId String
+  district   District @relation(fields: [districtId], references: [id])
+
+  offices Office[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Office {
+  id       String  @id @default(uuid())
+  name     String
+  type     String
+  capacity Int
+  isActive Boolean @default(true)
+
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+
+  appointments Appointment[]
+
+  itemInstances ItemInstance[]
+
+  workSchedules WorkSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkSchedule {
+  id        String   @id @default(uuid())
+  day       WeekDay
+  startTime DateTime
+  endTime   DateTime
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  officeId String
+  office   Office @relation(fields: [officeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id         String       @id @default(uuid())
+  name       String
+  type       DocumentType
+  fileUrl    String?
+  bucketName String?
+  filePath   String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  testId String? @unique
+  test   Test?   @relation(fields: [testId], references: [id])
+
+  patientTestId String?      @unique
+  patientTest   PatientTest? @relation(fields: [patientTestId], references: [id])
+
+  employeeLeaveId String?        @unique
+  employeeLeave   EmployeeLeave? @relation(fields: [employeeLeaveId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmployeeLeave {
+  id        String   @id @default(uuid())
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+
+  isActive Boolean @default(true)
+
+  document Document?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String  @id @default(uuid())
+  firstName String
+  lastName  String
+  dni       String  @unique @db.VarChar(8)
+  email     String  @unique
+  password  String
+  csp       String?
+
+  isActive        Boolean @default(false)
+  isEmailVerified Boolean @default(false)
+
+  psychologistId String?
+  psychologist   User?   @relation("UserToPsychologist", fields: [psychologistId], references: [id])
+
+  interns User[] @relation("UserToPsychologist")
+
+  roles          UserRole[]
+  patients       Patient[]
+  workSchedule   WorkSchedule[]
+  documents      Document[]
+  appointments   Appointment[]
+  employeeLeaves EmployeeLeave[]
+  createdTests   Test[] // Tests (templates) created by this user (ADMIN)
+  evaluations    Evaluation[] // Evaluations created by this user (ADMIN)
+  patientTests   PatientTest[] // Completed tests by this user (Psychologist)
+
+  // NUEVO: Relaciones para tokens
+  authTokens     AuthToken[]
+  passwordResets PasswordReset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuthToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  type      TokenType
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@map("auth_tokens")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime // Solo para reset, no para activación
+  createdAt DateTime  @default(now())
+
+  ipAddress String? // IP desde donde se solicitó el reseteo
+  userAgent String? // User-Agent del navegador o cliente
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_resets")
+}
+
+enum TokenType {
+  ACCOUNT_ACTIVATION
+  PASSWORD_RESET
+}

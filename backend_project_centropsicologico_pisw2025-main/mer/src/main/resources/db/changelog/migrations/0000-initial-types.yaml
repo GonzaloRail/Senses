@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0000-initial-types
+      author: Gabriel
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DROP TYPE IF EXISTS enum_appointment_status CASCADE;
+              DROP TYPE IF EXISTS enum_document_type CASCADE;
+              DROP TYPE IF EXISTS enum_gender CASCADE;
+              DROP TYPE IF EXISTS enum_marital_status CASCADE;
+              DROP TYPE IF EXISTS enum_role_type CASCADE;
+              DROP TYPE IF EXISTS enum_week_day CASCADE;
+              CREATE TYPE enum_appointment_status AS ENUM ('PENDING','CANCELED','DONE');
+              CREATE TYPE enum_document_type AS ENUM ('CLINICAL_HISTORY','USER_DOCS','TEMPLATE','EVALUATION_TEST');
+              CREATE TYPE enum_gender AS ENUM ('MALE','FEMALE','LGBTQ','NOT_SPECIFIED');
+              CREATE TYPE enum_marital_status AS ENUM ('SINGLE','MARRIED','WIDOWED','DIVORCED');
+              CREATE TYPE enum_role_type AS ENUM ('ADMIN','ADMISSION','PSYCHOLOGIST','INTERNAL');
+              CREATE TYPE enum_week_day AS ENUM ('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY');

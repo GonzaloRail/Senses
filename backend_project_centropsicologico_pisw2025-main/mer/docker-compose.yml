@@ -1,0 +1,12 @@
+services:
+  senses-SAC-DB-JAVA:
+    image: postgres:15.3
+    container_name: senses-SAC-DB-JAVA
+    environment:
+      POSTGRES_DB: senses_db
+      POSTGRES_USER: senses_admin
+      POSTGRES_PASSWORD: senses_password
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres:/var/lib/postgresql/data

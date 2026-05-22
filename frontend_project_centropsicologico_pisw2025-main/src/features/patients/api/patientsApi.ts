@@ -1,0 +1,70 @@
+import api from "@/api/api";
+import type { Patient } from "@/shared/interfaces/models";
+
+export interface PatientsPaginatedQuery {
+  page: number;
+  take: number;
+  search?: string;
+}
+
+export const getAllPatientsApi = async ({
+  page,
+  take,
+  search = "",
+}: PatientsPaginatedQuery) => {
+  const response = await api.get(`/api/v1/patients`, {
+    params: {
+      page,
+      take,
+      search,
+    },
+  });
+  return response.data;
+};
+
+export interface PatientByIdQuery {
+  id: string;
+}
+
+export const getPatientByIdApi = async ({ id }: PatientByIdQuery) => {
+  const response = await api.get(`/api/v1/patients/${id}`);
+  return response.data;
+};
+
+export interface PatientUpdateMutation {
+  id: string;
+  patientToUpdate: Partial<Patient>;
+}
+
+export const updatePatientApi = async ({
+  id,
+  patientToUpdate,
+}: PatientUpdateMutation) => {
+  const response = await api.put(`/api/v1/patients/${id}`, patientToUpdate);
+
+  return response.data;
+};
+
+export const createPatientApi = async (patientToCreate: Partial<Patient>) => {
+  const response = await api.post(`/api/v1/patients`, patientToCreate);
+
+  return response.data;
+};
+
+export const searchPatientsByDniOrName = async (dni: string, name: string) => {
+  const response = await api.get(`/api/v1/patients/search`, {
+    params: {
+      dni,
+      name,
+    },
+  });
+
+  return response.data;
+};
+
+export const exportPatientsToExcelApi = async () => {
+  const response = await api.get(`/api/v1/patients/download-report`, {
+    responseType: "blob",
+  });
+  return response.data;
+}

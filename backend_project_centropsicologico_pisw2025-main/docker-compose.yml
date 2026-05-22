@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  senses-SAC-DB:
+    image: postgres:15.3
+    container_name: senses-SAC-DB
+    environment:
+      POSTGRES_DB: senses_db
+      POSTGRES_USER: senses_admin
+      POSTGRES_PASSWORD: senses_password
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres:/var/lib/postgresql/data

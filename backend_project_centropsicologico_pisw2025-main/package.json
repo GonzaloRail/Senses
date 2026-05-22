@@ -1,0 +1,56 @@
+{
+  "name": "backend_project_centropsicologico_pisw2025",
+  "version": "1.0.0",
+  "description": "Backend for SensesPsicologos S.A.C.",
+  "main": "server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start:prod": "node dist/server.js",
+    "db:deploy": "npx prisma migrate deploy && npx prisma generate",
+    "dev": "nodemon --exec tsx server.ts",
+    "seed": "tsx src/seed/seed.ts",
+    "seed-regions": "tsx src/seed/seed-regions.ts",
+    "seed-database": "tsx src/seed/seed-database.ts",
+    "prisma:deploy:render": "npx prisma migrate deploy && prisma generate && npm run seed-regions && npm run seed-database",
+    "build:prod:render": "npm install && tsc && npm run prisma:deploy:render"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/pisw2025-estudio-psicologico/pisw2025_estudiopsicologico/backend_project_centropsicologico_pisw2025.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/pisw2025-estudio-psicologico/pisw2025_estudiopsicologico/backend_project_centropsicologico_pisw2025/issues"
+  },
+  "homepage": "https://gitlab.com/pisw2025-estudio-psicologico/pisw2025_estudiopsicologico/backend_project_centropsicologico_pisw2025#readme",
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.21",
+    "@types/nodemailer": "^6.4.17",
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
+    "@prisma/client": "^6.8.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.3",
+    "nodemon": "^3.1.10",
+    "zod": "^3.25.13"
+  }
+}

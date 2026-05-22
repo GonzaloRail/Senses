@@ -1,0 +1,1298 @@
+databaseChangeLog:
+- changeSet:
+    id: 0001-initial-migration-bootstrap
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: end_date
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: start_date
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: appointments_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: office_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: patient_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: psychologist_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: reason
+            type: VARCHAR(300)
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: enum_appointment_status
+        tableName: appointments
+- changeSet:
+    id: 1756696515837-2
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: documents_pkey
+            name: id
+            type: UUID
+        - column:
+            name: user_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: document_type
+            type: enum_document_type
+        - column:
+            constraints:
+              nullable: false
+            name: file_url
+            type: VARCHAR(255)
+        tableName: documents
+- changeSet:
+    id: 1756696515837-3
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: birthdate
+            type: date
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: dni
+            type: VARCHAR(8)
+        - column:
+            name: parent_dni
+            type: VARCHAR(8)
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: clinical_history_id
+            type: UUID
+        - column:
+            name: district_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: patients_pkey
+            name: id
+            type: UUID
+        - column:
+            name: psychologist_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: first_name
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: last_name
+            type: VARCHAR(50)
+        - column:
+            name: religion
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: birth_place
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: education_level
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: occupation
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: occupation_location
+            type: VARCHAR(100)
+        - column:
+            name: parent_full_name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: address
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: gender
+            type: enum_gender
+        - column:
+            constraints:
+              nullable: false
+            name: marital_status
+            type: enum_marital_status
+        - column:
+            name: parent_phone_number
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: phone_number
+            type: VARCHAR(255)
+        tableName: patients
+- changeSet:
+    id: 1756696515837-4
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: roles_pkey
+            name: id
+            type: UUID
+        - column:
+            name: name
+            type: enum_role_type
+        tableName: roles
+- changeSet:
+    id: 1756696515837-5
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: end_time
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: start_time
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: work_schedules_pkey
+            name: id
+            type: UUID
+        - column:
+            name: office_id
+            type: UUID
+        - column:
+            name: user_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: week_day
+            type: enum_week_day
+        tableName: work_schedules
+- changeSet:
+    id: 1756696515837-6
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: display_int
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: clinical_histories_pkey
+            name: id
+            type: UUID
+        tableName: clinical_histories
+- changeSet:
+    id: 1756696515837-7
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: end_date
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: start_date
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: document_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: employee_leaves_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: UUID
+        - column:
+            name: reason
+            type: VARCHAR(300)
+        tableName: employee_leaves
+- changeSet:
+    id: 1756696515837-8
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: display_int
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: item_instances_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: item_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: office_id
+            type: UUID
+        - column:
+            name: description
+            type: VARCHAR(255)
+        tableName: item_instances
+- changeSet:
+    id: 1756696515837-9
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_general_doc
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: completed_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: clinical_history_id
+            type: UUID
+        - column:
+            name: completed_by_id
+            type: UUID
+        - column:
+            name: document_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: patient_tests_pkey
+            name: id
+            type: UUID
+        - column:
+            name: test_id
+            type: UUID
+        tableName: patient_tests
+- changeSet:
+    id: 1756696515837-10
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: created_by_id
+            type: UUID
+        - column:
+            name: document_id
+            type: UUID
+        - column:
+            name: evaluation_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: tests_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            name: description
+            type: VARCHAR(500)
+        tableName: tests
+- changeSet:
+    id: 1756696515837-11
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: dni
+            type: VARCHAR(8)
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: users_pkey
+            name: id
+            type: UUID
+        - column:
+            name: psychologist_id
+            type: UUID
+        - column:
+            name: csp
+            type: VARCHAR(20)
+        - column:
+            constraints:
+              nullable: false
+            name: first_name
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: last_name
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: email
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: password
+            type: VARCHAR(255)
+        tableName: users
+- changeSet:
+    id: 1756696515837-12
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: clinical_history_id
+        constraintName: patients_clinical_history_id_key
+        tableName: patients
+- changeSet:
+    id: 1756696515837-13
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: dni
+        constraintName: patients_dni_key
+        tableName: patients
+- changeSet:
+    id: 1756696515837-14
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: display_int
+        constraintName: clinical_histories_display_int_key
+        tableName: clinical_histories
+- changeSet:
+    id: 1756696515837-15
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: document_id
+        constraintName: employee_leaves_document_id_key
+        tableName: employee_leaves
+- changeSet:
+    id: 1756696515837-16
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: display_int
+        constraintName: item_instances_display_int_key
+        tableName: item_instances
+- changeSet:
+    id: 1756696515837-17
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: document_id
+        constraintName: patient_tests_document_id_key
+        tableName: patient_tests
+- changeSet:
+    id: 1756696515837-18
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: document_id
+        constraintName: tests_document_id_key
+        tableName: tests
+- changeSet:
+    id: 1756696515837-19
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: dni
+        constraintName: users_dni_key
+        tableName: users
+- changeSet:
+    id: 1756696515837-20
+    author: USER (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: email
+        constraintName: users_email_key
+        tableName: users
+- changeSet:
+    id: 1756696515837-21
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: districts_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: province_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: districts
+- changeSet:
+    id: 1756696515837-22
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: created_by_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: evaluations_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            name: description
+            type: VARCHAR(500)
+        tableName: evaluations
+- changeSet:
+    id: 1756696515837-23
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: items_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: items
+- changeSet:
+    id: 1756696515837-24
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: district_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: locations_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: address
+            type: VARCHAR(255)
+        tableName: locations
+- changeSet:
+    id: 1756696515837-25
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: capacity
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: is_active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: offices_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: location_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: offices
+- changeSet:
+    id: 1756696515837-26
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: provinces_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: region_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: provinces
+- changeSet:
+    id: 1756696515837-27
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: regions_pkey
+            name: id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: regions
+- changeSet:
+    id: 1756696515837-28
+    author: USER (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: user_roles_pkey
+            name: role_id
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: user_roles_pkey
+            name: user_id
+            type: UUID
+        tableName: user_roles
+- changeSet:
+    id: 1756696515837-29
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: clinical_history_id
+        baseTableName: patients
+        constraintName: fk2h77wryw5g3w26i7hwolejnn0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: clinical_histories
+        validate: true
+- changeSet:
+    id: 1756696515837-30
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: created_by_id
+        baseTableName: evaluations
+        constraintName: fk3rnxjyw83xue23fcr7ul580lg
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-31
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: patient_id
+        baseTableName: appointments
+        constraintName: fk471g7cuqfeo4ga5lv7nu0qylu
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: patients
+        validate: true
+- changeSet:
+    id: 1756696515837-32
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: document_id
+        baseTableName: tests
+        constraintName: fk5sg3re51t681ii0rce5tnc28x
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: documents
+        validate: true
+- changeSet:
+    id: 1756696515837-33
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: created_by_id
+        baseTableName: tests
+        constraintName: fk79wwhlrhjhet00ij3ju6qw8g4
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-34
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: province_id
+        baseTableName: districts
+        constraintName: fk82doq1t64jhly7a546lpvnu2c
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: provinces
+        validate: true
+- changeSet:
+    id: 1756696515837-35
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: item_id
+        baseTableName: item_instances
+        constraintName: fk8ogxarjx43tebg9fohshjkle9
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: items
+        validate: true
+- changeSet:
+    id: 1756696515837-36
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: psychologist_id
+        baseTableName: users
+        constraintName: fkab3mjancfp0nlneb037m4l8fo
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-37
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: employee_leaves
+        constraintName: fkbn5y1xsk841rs24rlibao3iv1
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-38
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: location_id
+        baseTableName: offices
+        constraintName: fkbs4q4hy7drnt7cl6vkp06cci0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: locations
+        validate: true
+- changeSet:
+    id: 1756696515837-39
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: test_id
+        baseTableName: patient_tests
+        constraintName: fkc2wm5fwjrt9c53vq2wa7r7xow
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: tests
+        validate: true
+- changeSet:
+    id: 1756696515837-40
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: office_id
+        baseTableName: appointments
+        constraintName: fkcbmdjv8wb4xwns145n4g802c1
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: offices
+        validate: true
+- changeSet:
+    id: 1756696515837-41
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: psychologist_id
+        baseTableName: patients
+        constraintName: fkd501m507g8j04twua68c0fj5n
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-42
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: role_id
+        baseTableName: user_roles
+        constraintName: fkh8ciramu9cc9q3qcqiv4ue8a6
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: roles
+        validate: true
+- changeSet:
+    id: 1756696515837-43
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: user_roles
+        constraintName: fkhfh9dx7w3ubf1co1vdev94g3f
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-44
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: document_id
+        baseTableName: patient_tests
+        constraintName: fkhxfx0xqg76fo2fnopp6iyx29p
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: documents
+        validate: true
+- changeSet:
+    id: 1756696515837-45
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: work_schedules
+        constraintName: fkj81w5rs9r89mvwhvwm6vuqiln
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-46
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: document_id
+        baseTableName: employee_leaves
+        constraintName: fkk8c8gevicdf5i6lqigae3qqxt
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: documents
+        validate: true
+- changeSet:
+    id: 1756696515837-47
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: documents
+        constraintName: fkkxttj4tp5le2uth212lu49vny
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-48
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: completed_by_id
+        baseTableName: patient_tests
+        constraintName: fkl5yrw432k90gk3gjbjr0la7nc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1756696515837-49
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: clinical_history_id
+        baseTableName: patient_tests
+        constraintName: fkm9gpssw7p87cimskcq4io3xxc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: clinical_histories
+        validate: true
+- changeSet:
+    id: 1756696515837-50
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: district_id
+        baseTableName: patients
+        constraintName: fkpmvqgankycn88nw1qnoc07s1t
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: districts
+        validate: true
+- changeSet:
+    id: 1756696515837-51
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: region_id
+        baseTableName: provinces
+        constraintName: fkr52p9hvmia0r4042b4s4h6qil
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: regions
+        validate: true
+- changeSet:
+    id: 1756696515837-52
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: evaluation_id
+        baseTableName: tests
+        constraintName: fkr8u5l7yewkjitr7d66swwqsw0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: evaluations
+        validate: true
+- changeSet:
+    id: 1756696515837-53
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: office_id
+        baseTableName: work_schedules
+        constraintName: fkry3evgdksh154e4lcxp6sg8dg
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: offices
+        validate: true
+- changeSet:
+    id: 1756696515837-54
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: district_id
+        baseTableName: locations
+        constraintName: fksd2oc9stvx013fb8ky33sxgg4
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: districts
+        validate: true
+- changeSet:
+    id: 1756696515837-55
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: office_id
+        baseTableName: item_instances
+        constraintName: fkt02hd9sr8hfjvko518y2d8bhn
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: offices
+        validate: true
+- changeSet:
+    id: 1756696515837-56
+    author: USER (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: psychologist_id
+        baseTableName: appointments
+        constraintName: fkyb7oinqbwu4me3bg3odqxe5p
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+

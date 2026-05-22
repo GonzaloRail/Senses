@@ -1,0 +1,55 @@
+
+services:
+  db:
+    image: postgres:15.3
+    container_name: senses-SAC-DB-dev
+    environment:
+      POSTGRES_DB: senses_db
+      POSTGRES_USER: senses_admin
+      POSTGRES_PASSWORD: senses_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: senses-SAC-APP-dev
+    depends_on:
+      - db
+    env_file:
+      - .env.release
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "
+        echo '⏳ Esperando a la base de datos en db:5432...' &&
+        node -e \"
+        const net = require('net');
+        const tryConnect = () => {
+          const socket = net.connect(5432, 'db');
+          socket.on('connect', () => {
+            console.log('✅ Base de datos disponible');
+            setTimeout(()=>{
+              console.log('Se espero 20 seg a iniciar DB')
+              process.exit(0);
+            
+            },20000)
+          });
+          socket.on('error', () => {
+            setTimeout(tryConnect, 1000);
+          });
+        };
+
+
+        tryConnect();
+        \" &&
+
+        echo '✅ Base de datos lista' &&
+        npm run db:deploy &&
+        npm run seed-regions &&
+        npm run seed-database &&
+
+        echo '🚀 Iniciando servidor' &&
+        node dist/server.js
+      "
