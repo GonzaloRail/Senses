@@ -52,11 +52,12 @@ export const PatientsList = () => {
   }) => {
     const page = pageIndex + 1;
     const take = pageSize;
+    const normalizedSearch = search.trim();
 
     const dataResponse =
       await queryClient.fetchQuery<PatientsPaginatedResponse>({
-        queryKey: ["patients", page, take],
-        queryFn: () => getAllPatientsApi({ page, take, search }),
+        queryKey: ["patients", page, take, normalizedSearch],
+        queryFn: () => getAllPatientsApi({ page, take, search: normalizedSearch }),
       });
     const data = dataResponse.patients.map(
       ({ id, firstName, lastName, dni, phoneNumber }) => ({
@@ -126,8 +127,10 @@ export const PatientsList = () => {
               fetchData={fetchData}
               columns={columns}
               searchItem={{
-                searchLabel: "Buscar por DNI",
+                searchLabel: "Buscar por nombre, apellido o DNI",
                 fetchDataSearch: fetchDataSearch,
+                typeSearch: "text",
+                lenghtMax: 80,
               }}
               addItem={{
                 addItemLabel: "Agregar nuevo paciente",

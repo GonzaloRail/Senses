@@ -45,6 +45,9 @@ export const patientFormSchema = z.object({
         code: z.ZodIssueCode.custom,
       });
     }
+    /////////////////////////
+    //El error esta aca, aca le hace un if
+    /*
     if (
       data.parentPhoneNumber &&
       data.phoneNumber === data.parentPhoneNumber
@@ -55,7 +58,7 @@ export const patientFormSchema = z.object({
           "El teléfono del padre no puede ser igual al teléfono del paciente",
         code: z.ZodIssueCode.custom,
       });
-    }
+    }*/
   });
 
 export type PatientFormSchema = z.infer<typeof patientFormSchema>;

@@ -64,6 +64,15 @@ export const DataTable = <T extends RowWithId>({
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  const runSearch = () => {
+    if (!searchItem?.fetchDataSearch) return;
+
+    searchItem.fetchDataSearch({ ...pagination, search: search.trim() }).then((res) => {
+      setData(res.data);
+      setPageCount(res.pageCount);
+    });
+  };
+
   const getLocalDate = (date: Date) => {
     const tzoffset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - tzoffset);
@@ -257,20 +266,17 @@ export const DataTable = <T extends RowWithId>({
                 }
                 setSearch(target.value);
               }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  runSearch();
+                }
+              }}
               placeholder={searchItem.searchLabel}
             />
             <Button
               type="submit"
-              onClick={() => {
-                if (searchItem.fetchDataSearch) {
-                  searchItem
-                    .fetchDataSearch({ ...pagination, search })
-                    .then((res) => {
-                      setData(res.data);
-                      setPageCount(res.pageCount);
-                    });
-                }
-              }}
+              onClick={runSearch}
             >
               Buscar
             </Button>
