@@ -19,11 +19,19 @@ export const getAllPatientsPaginated = async (
   next: NextFunction
 ) => {
   try {
-    const { page = 1, take = 10, search = "" } = req.query;
+    const {
+      page = 1,
+      take = 10,
+      dni = "",
+      firstname = "",
+      lastname = "",
+    } = req.query;
     const queryParams = {
       page: Number(page),
       take: Number(take),
-      search: String(search),
+      dni: String(dni),
+      firstname: String(firstname),
+      lastname: String(lastname),
     };
     const result = await getAllPatientsPaginatedService(queryParams);
     res.status(200).json(result);
@@ -38,14 +46,22 @@ export const getPatientsByPsychologistId = async (
   next: NextFunction
 ) => {
   try {
-    const { page = 1, take = 10, search = "" } = req.query;
+    const {
+      page = 1,
+      take = 10,
+      dni = "",
+      firstname = "",
+      lastname = "",
+    } = req.query;
     const { psychologistId } = req.params;
 
     const data: GetPatientsByPsychologistIdInput = {
       query: {
         page: Number(page),
         take: Number(take),
-        search: String(search),
+        dni: String(dni),
+        firstname: String(firstname),
+        lastname: String(lastname),
       },
       params: {
         psychologistId,
@@ -58,16 +74,18 @@ export const getPatientsByPsychologistId = async (
     next(error);
   }
 };
+
 export const getAllPatientsSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { name = "", dni = "" } = req.query;
+    const { firstname = "", dni = "", lastname = "" } = req.query;
     const queryParams = {
-      name: String(name),
+      firstname: String(firstname),
       dni: String(dni),
+      lastname: String(lastname),
     };
     const result = await getAllPatientsSearchService(queryParams);
     res.status(200).json(result);
@@ -140,14 +158,22 @@ export const getMyPatientList = async (
   next: NextFunction
 ) => {
   try {
-    const { page = 1, take = 10, search = "" } = req.query;
+    const {
+      page = 1,
+      take = 10,
+      dni = "",
+      firstname = "",
+      lastname = "",
+    } = req.query;
     const { psychologistId } = req.params;
 
     const data: GetMyPatientListInput = {
       query: {
         page: Number(page),
         take: Number(take),
-        search: String(search),
+        dni: String(dni),
+        firstname: String(firstname),
+        lastname: String(lastname),
       },
       params: {
         psychologistId,
