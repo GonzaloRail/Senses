@@ -30,6 +30,7 @@ import { PatientTestRouter } from "./src/features/patientTests";
 import { DashboardRouter } from "./src/features/dashboard";
 import { startEmployeeLeaveReactivationScheduler } from "./src/lib/employeeLeaveScheduler";
 import { StorageRouter } from "./src/cloudStorage";
+import { setupSwagger } from "./src/swagger";
 
 const app = express();
 
@@ -44,6 +45,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+setupSwagger(app);
 
 app.use((req, res, next) => {
   console.log(req.cookies.refreshToken);

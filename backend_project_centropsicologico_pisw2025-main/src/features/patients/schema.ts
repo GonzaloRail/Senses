@@ -2,12 +2,18 @@ import { z } from "zod";
 
 const GenderEnum = z.enum(["MALE", "FEMALE", "LGBTQ", "NOT_SPECIFIED"]);
 const MaritalStatusEnum = z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED", "COHABITANT"]);
+const searchDniSchema = z
+  .string()
+  .regex(/^\d*$/, "DNI must contain only numbers")
+  .optional();
 
 export const getAllPatientsPaginatedSchema = z.object({
   query: z.object({
     page: z.coerce.number().min(1, "Page must be at least 1").optional(),
     take: z.coerce.number().min(1, "Limit must be at least 1").optional(),
-    search: z.string().optional(),
+    dni: searchDniSchema,
+    firstname: z.string().optional(),
+    lastname: z.string().optional(),
   }),
 });
 
@@ -17,8 +23,9 @@ export type GetAllPatientsPaginatedInput = z.infer<
 
 export const getAllPatientsSearchSchema = z.object({
   query: z.object({
-    dni: z.string().optional(),
-    name: z.string().optional(),
+    dni: searchDniSchema,
+    firstname: z.string().optional(),
+    lastname: z.string().optional(),
   }),
 });
 
@@ -95,7 +102,9 @@ export const getPatientsByPsychologistIdSchema = z.object({
   query: z.object({
     page: z.coerce.number().min(1, "Page must be at least 1").optional(),
     take: z.coerce.number().min(1, "Limit must be at least 1").optional(),
-    search: z.string().optional(),
+    dni: searchDniSchema,
+    firstname: z.string().optional(),
+    lastname: z.string().optional(),
   }),
 });
 export type GetPatientsByPsychologistIdInput = z.infer<
@@ -157,7 +166,9 @@ export const getMyPatientListSchema = z.object({
   query: z.object({
     page: z.coerce.number().min(1, "Page must be at least 1").optional(),
     take: z.coerce.number().min(1, "Limit must be at least 1").optional(),
-    search: z.string().optional(),
+    dni: searchDniSchema,
+    firstname: z.string().optional(),
+    lastname: z.string().optional(),
   }),
 });
 export type GetMyPatientListInput = z.infer<

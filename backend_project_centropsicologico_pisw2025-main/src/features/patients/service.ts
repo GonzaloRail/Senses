@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { AppError } from "../../common/utils";
 import { PatientMinimal } from "../../interfaces";
 import prisma from "../../lib/prisma";
@@ -12,19 +13,64 @@ import {
   UpdatePatientInput,
 } from "./schema";
 
+const normalizeSearch = (value?: string) =>
+  value?.trim().replace(/\s+/g, " ") ?? "";
+
+type PatientSearchFilters = {
+  dni?: string;
+  firstname?: string;
+  lastname?: string;
+};
+
+const buildDniFilter = (
+  value: string
+): Prisma.StringFilter<"Patient"> | string =>
+  value.length === 8 ? value : { startsWith: value };
+
+const buildPatientSearchWhere = ({
+  dni,
+  firstname,
+  lastname,
+}: PatientSearchFilters): Prisma.PatientWhereInput => {
+  const dniTerm = normalizeSearch(dni);
+  const firstnameTerm = normalizeSearch(firstname);
+  const lastnameTerm = normalizeSearch(lastname);
+
+  if (dniTerm) {
+    return {
+      dni: buildDniFilter(dniTerm),
+    };
+  }
+
+  return {
+    ...(firstnameTerm && {
+      firstName: {
+        contains: firstnameTerm,
+        mode: "insensitive",
+      },
+    }),
+    ...(lastnameTerm && {
+      lastName: {
+        contains: lastnameTerm,
+        mode: "insensitive",
+      },
+    }),
+  };
+};
+
 export const getAllPatientsPaginatedService = async ({
+  dni,
+  firstname,
+  lastname,
   page,
-  search,
   take,
 }: GetAllPatientsPaginatedInput) => {
+  const whereClause = buildPatientSearchWhere({ dni, firstname, lastname });
+
   const patientsDB = await prisma.patient.findMany({
     take: take!,
     skip: (page! - 1) * take!,
-    where: {
-      dni: {
-        startsWith: search,
-      },
-    },
+    where: whereClause,
     orderBy: {
       createdAt: "desc",
     },
@@ -35,11 +81,7 @@ export const getAllPatientsPaginatedService = async ({
 
   const totalPages = Math.ceil(
     (await prisma.patient.count({
-      where: {
-        dni: {
-          startsWith: search,
-        },
-      },
+      where: whereClause,
     })) / take!
   );
   return {
@@ -52,18 +94,19 @@ export const getAllPatientsByPsychologistIdService = async ({
   params,
   query,
 }: GetPatientsByPsychologistIdInput) => {
-  const { page, search, take } = query;
+  const { page, take } = query;
+  const { dni, firstname, lastname } = query;
   const { psychologistId } = params;
+
+  const whereClause: Prisma.PatientWhereInput = {
+    psychologistId,
+    ...buildPatientSearchWhere({ dni, firstname, lastname }),
+  };
 
   const patientsDB = await prisma.patient.findMany({
     take: take!,
     skip: (page! - 1) * take!,
-    where: {
-      dni: {
-        contains: search,
-      },
-      psychologistId: psychologistId,
-    },
+    where: whereClause,
     orderBy: {
       createdAt: "desc",
     },
@@ -74,11 +117,7 @@ export const getAllPatientsByPsychologistIdService = async ({
 
   const totalPages = Math.ceil(
     (await prisma.patient.count({
-      where: {
-        dni: {
-          startsWith: search,
-        },
-      },
+      where: whereClause,
     })) / take!
   );
   return {
@@ -90,45 +129,17 @@ export const getAllPatientsByPsychologistIdService = async ({
 
 export const getAllPatientsSearchService = async ({
   dni,
-  name,
+  firstname,
+  lastname,
 }: GetAllPatientsSearchInput) => {
-  console.log({ dni, name });
+  const whereClause = buildPatientSearchWhere({ dni, firstname, lastname });
 
-  // Construir las condiciones de búsqueda dinámicamente
-  const searchConditions = [];
-
-  // Solo agregar condiciones de nombre si no está vacío
-  if (name && name.trim().length > 0) {
-    searchConditions.push({
-      firstName: {
-        contains: name.trim(),
-        mode: "insensitive" as const,
-      },
-    });
-
-    searchConditions.push({
-      lastName: {
-        contains: name.trim(),
-        mode: "insensitive" as const,
-      },
-    });
-    searchConditions.push({
-      dni: {
-        contains: name.trim(),
-        mode: "insensitive" as const,
-      },
-    });
-  }
-
-  // Si no hay condiciones de búsqueda, retornar array vacío o todos los pacientes
-  if (searchConditions.length === 0) {
-    return []; // O puedes retornar todos con un límite
+  if (Object.keys(whereClause).length === 0) {
+    return [];
   }
 
   const patientsDB = await prisma.patient.findMany({
-    where: {
-      OR: searchConditions,
-    },
+    where: whereClause,
     orderBy: {
       createdAt: "desc",
     },
@@ -264,18 +275,17 @@ export const getMyPatientListService = async ({
   params,
   query,
 }: GetMyPatientListInput) => {
-  const { page, search, take } = query;
+  const { page, take } = query;
+  const { dni, firstname, lastname } = query;
   const { psychologistId } = params;
 
-  const whereClause = {
-    dni: {
-      contains: search,
-    },
+  const whereClause: Prisma.PatientWhereInput = {
     appointments: {
       some: {
         userId: psychologistId,
       },
     },
+    ...buildPatientSearchWhere({ dni, firstname, lastname }),
   };
 
   const patientsDB = await prisma.patient.findMany({
