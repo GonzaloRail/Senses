@@ -13,7 +13,7 @@ import { SiteHeader } from "@/shared/components/SiteHeader";
 import type { PatientsPaginatedResponse } from "@/shared/interfaces/apiResponses/getAllPatientsPaginatedResponse";
 import type { PatientsListSchema } from "@/shared/interfaces/tables/PatientsListSchema";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { exportPatientsToExcelApi, getAllPatientsApi } from "../api/patientsApi";
 
@@ -23,7 +23,11 @@ export const PatientsList = () => {
   const [dniSearch, setDniSearch] = useState("");
   const [nameSearch, setNameSearch] = useState("");
   const [lastNameSearch, setLastNameSearch] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    dni: "",
+    firstname: "",
+    lastname: "",
+  });
 
   const columns: ColumnDef<PatientsListSchema>[] = [
     {
@@ -63,16 +67,27 @@ export const PatientsList = () => {
   const fetchData = useCallback(async ({ pageIndex = 0, pageSize = 10 }) => {
     const page = pageIndex + 1;
     const take = pageSize;
-    const normalizedSearch = appliedSearch.trim();
+    const normalizedDni = appliedFilters.dni.trim();
+    const normalizedFirstname = appliedFilters.firstname.trim();
+    const normalizedLastname = appliedFilters.lastname.trim();
 
     const dataResponse =
       await queryClient.fetchQuery<PatientsPaginatedResponse>({
-        queryKey: ["patients", page, take, normalizedSearch],
+        queryKey: [
+          "patients",
+          page,
+          take,
+          normalizedDni,
+          normalizedFirstname,
+          normalizedLastname,
+        ],
         queryFn: () =>
           getAllPatientsApi({
             page,
             take,
-            ...(normalizedSearch ? { search: normalizedSearch } : {}),
+            ...(normalizedDni ? { dni: normalizedDni } : {}),
+            ...(normalizedFirstname ? { firstname: normalizedFirstname } : {}),
+            ...(normalizedLastname ? { lastname: normalizedLastname } : {}),
           }),
       });
 
@@ -90,7 +105,7 @@ export const PatientsList = () => {
       data,
       pageCount: dataResponse.totalPages,
     };
-  }, [appliedSearch]);
+  }, [appliedFilters]);
 
   const downloadExcel = async () => {
     const blob = await exportPatientsToExcelApi();
@@ -109,21 +124,53 @@ export const PatientsList = () => {
 
   const handleSearch = () => {
     if (searchType === "DNI") {
-      setAppliedSearch(dniSearch.trim());
+      setAppliedFilters({
+        dni: dniSearch.trim(),
+        firstname: "",
+        lastname: "",
+      });
       return;
     }
 
-    const fullNameSearch = `${nameSearch.trim()} ${lastNameSearch.trim()}`.trim();
-    setAppliedSearch(fullNameSearch);
+    setAppliedFilters({
+      dni: "",
+      firstname: nameSearch.trim(),
+      lastname: lastNameSearch.trim(),
+    });
   };
 
   const handleSearchTypeChange = (value: "DNI" | "NAME_SURNAME") => {
     setSearchType(value);
-    setAppliedSearch("");
+    setAppliedFilters({
+      dni: "",
+      firstname: "",
+      lastname: "",
+    });
     setDniSearch("");
     setNameSearch("");
     setLastNameSearch("");
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchType === "DNI") {
+        setAppliedFilters({
+          dni: dniSearch.trim(),
+          firstname: "",
+          lastname: "",
+        });
+        return;
+      }
+
+      setAppliedFilters({
+        dni: "",
+        firstname: nameSearch.trim(),
+        lastname: lastNameSearch.trim(),
+      });
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchType, dniSearch, nameSearch, lastNameSearch]);
 
   return (
     <>
@@ -153,6 +200,12 @@ export const PatientsList = () => {
                     <Input
                       value={dniSearch}
                       onChange={(event) => setDniSearch(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleSearch();
+                        }
+                      }}
                       placeholder="Buscar por DNI..."
                       maxLength={8}
                       className="w-full"
@@ -162,6 +215,12 @@ export const PatientsList = () => {
                       <Input
                         value={nameSearch}
                         onChange={(event) => setNameSearch(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleSearch();
+                          }
+                        }}
                         placeholder="Nombre"
                         maxLength={40}
                         className="w-full"
@@ -169,6 +228,12 @@ export const PatientsList = () => {
                       <Input
                         value={lastNameSearch}
                         onChange={(event) => setLastNameSearch(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleSearch();
+                          }
+                        }}
                         placeholder="Apellido"
                         maxLength={40}
                         className="w-full"
@@ -183,7 +248,6 @@ export const PatientsList = () => {
               </div>
             </div>
             <DataTable
-              key={`${searchType}-${appliedSearch}`}
               fetchData={fetchData}
               columns={columns}
               addItem={{

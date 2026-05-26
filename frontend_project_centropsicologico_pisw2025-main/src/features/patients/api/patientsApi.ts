@@ -4,18 +4,27 @@ import type { Patient } from "@/shared/interfaces/models";
 export interface PatientsPaginatedQuery {
   page: number;
   take: number;
+  dni?: string;
+  firstname?: string;
+  lastname?: string;
   search?: string;
 }
 
 export const getAllPatientsApi = async ({
   page,
   take,
+  dni = "",
+  firstname = "",
+  lastname = "",
   search = "",
 }: PatientsPaginatedQuery) => {
   const response = await api.get(`/api/v1/patients`, {
     params: {
       page,
       take,
+      dni,
+      firstname,
+      lastname,
       search,
     },
   });
@@ -55,7 +64,8 @@ export const searchPatientsByDniOrName = async (dni: string, name: string) => {
   const response = await api.get(`/api/v1/patients/search`, {
     params: {
       dni,
-      name,
+      firstname: name,
+      lastname: name,
     },
   });
 
