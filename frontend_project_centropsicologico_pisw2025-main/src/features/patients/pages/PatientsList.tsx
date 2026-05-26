@@ -1,15 +1,30 @@
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { queryClient } from "@/lib/queryClient";
 import { DataTable } from "@/shared/components/DataTable";
 import { SiteHeader } from "@/shared/components/SiteHeader";
 import type { PatientsPaginatedResponse } from "@/shared/interfaces/apiResponses/getAllPatientsPaginatedResponse";
 import type { PatientsListSchema } from "@/shared/interfaces/tables/PatientsListSchema";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { exportPatientsToExcelApi, getAllPatientsApi } from "../api/patientsApi";
 
 export const PatientsList = () => {
   const navigate = useNavigate();
+  const [searchType, setSearchType] = useState<"DNI" | "NAME_SURNAME">("DNI");
+  const [dniSearch, setDniSearch] = useState("");
+  const [nameSearch, setNameSearch] = useState("");
+  const [lastNameSearch, setLastNameSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
   const columns: ColumnDef<PatientsListSchema>[] = [
     {
       accessorKey: "name",
@@ -45,45 +60,20 @@ export const PatientsList = () => {
     },
   ];
 
-  const fetchDataSearch = async ({
-    pageIndex = 0,
-    pageSize = 10,
-    search = "",
-  }) => {
+  const fetchData = useCallback(async ({ pageIndex = 0, pageSize = 10 }) => {
     const page = pageIndex + 1;
     const take = pageSize;
-    const normalizedSearch = search.trim();
+    const normalizedSearch = appliedSearch.trim();
 
     const dataResponse =
       await queryClient.fetchQuery<PatientsPaginatedResponse>({
         queryKey: ["patients", page, take, normalizedSearch],
-        queryFn: () => getAllPatientsApi({ page, take, search: normalizedSearch }),
-      });
-    const data = dataResponse.patients.map(
-      ({ id, firstName, lastName, dni, phoneNumber }) => ({
-        id,
-        name: `${firstName} ${lastName}`,
-        dni,
-        phoneNumber,
-        adminButton: "Administrar",
-      })
-    );
-
-    return {
-      data: data,
-      pageCount: dataResponse.totalPages,
-    };
-  };
-
-  const fetchData = async ({ pageIndex = 0, pageSize = 10 }) => {
-    const page = pageIndex + 1;
-    const take = pageSize;
-    console.log(page, take);
-
-    const dataResponse =
-      await queryClient.fetchQuery<PatientsPaginatedResponse>({
-        queryKey: ["patients", page, take],
-        queryFn: () => getAllPatientsApi({ page, take }),
+        queryFn: () =>
+          getAllPatientsApi({
+            page,
+            take,
+            ...(normalizedSearch ? { search: normalizedSearch } : {}),
+          }),
       });
 
     const data = dataResponse.patients.map(
@@ -100,7 +90,7 @@ export const PatientsList = () => {
       data,
       pageCount: dataResponse.totalPages,
     };
-  };
+  }, [appliedSearch]);
 
   const downloadExcel = async () => {
     const blob = await exportPatientsToExcelApi();
@@ -117,21 +107,85 @@ export const PatientsList = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSearch = () => {
+    if (searchType === "DNI") {
+      setAppliedSearch(dniSearch.trim());
+      return;
+    }
+
+    const fullNameSearch = `${nameSearch.trim()} ${lastNameSearch.trim()}`.trim();
+    setAppliedSearch(fullNameSearch);
+  };
+
+  const handleSearchTypeChange = (value: "DNI" | "NAME_SURNAME") => {
+    setSearchType(value);
+    setAppliedSearch("");
+    setDniSearch("");
+    setNameSearch("");
+    setLastNameSearch("");
+  };
+
   return (
     <>
       <SiteHeader title="Pacientes" />
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <div className="flex justify-end">
+                <div className="flex w-full max-w-4xl items-center gap-2">
+                  <Select
+                    value={searchType}
+                    onValueChange={(value) =>
+                      handleSearchTypeChange(value as "DNI" | "NAME_SURNAME")
+                    }
+                  >
+                    <SelectTrigger className="w-52">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DNI">DNI</SelectItem>
+                      <SelectItem value="NAME_SURNAME">Nombre y Apellido</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {searchType === "DNI" ? (
+                    <Input
+                      value={dniSearch}
+                      onChange={(event) => setDniSearch(event.target.value)}
+                      placeholder="Buscar por DNI..."
+                      maxLength={8}
+                      className="w-full"
+                    />
+                  ) : (
+                    <>
+                      <Input
+                        value={nameSearch}
+                        onChange={(event) => setNameSearch(event.target.value)}
+                        placeholder="Nombre"
+                        maxLength={40}
+                        className="w-full"
+                      />
+                      <Input
+                        value={lastNameSearch}
+                        onChange={(event) => setLastNameSearch(event.target.value)}
+                        placeholder="Apellido"
+                        maxLength={40}
+                        className="w-full"
+                      />
+                    </>
+                  )}
+
+                  <Button type="button" onClick={handleSearch}>
+                    Buscar
+                  </Button>
+                </div>
+              </div>
+            </div>
             <DataTable
+              key={`${searchType}-${appliedSearch}`}
               fetchData={fetchData}
               columns={columns}
-              searchItem={{
-                searchLabel: "Buscar por nombre, apellido o DNI",
-                fetchDataSearch: fetchDataSearch,
-                typeSearch: "text",
-                lenghtMax: 80,
-              }}
               addItem={{
                 addItemLabel: "Agregar nuevo paciente",
                 onClickAddItem: () => {
