@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo Interactivo - Evaluaciones Híbridas | Senses</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        senses: {
+                            primary: '#0B2035', // Navy Dark
+                            secondary: '#75B2C5', // Teal/Light Blue
+                            light: '#FFFFFF',
+                            slate: '#F8FAFC',
+                            success: '#6BC87F',
+                            danger: '#DC2626',
+                            border: '#E2E8F0',
+                        }
+                    },
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC;
+        }
+        h1, h2, h3, h4, .font-title {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Custom print styling */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER / NAVIGATION (NO-PRINT) -->
+    <header class="no-print bg-senses-primary text-white py-4 px-6 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-senses-secondary text-senses-primary p-2 rounded-lg font-bold font-outfit text-xl flex items-center justify-center">
+                S
+            </div>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight text-white">Senses Psicólogo S.A.C.</h1>
+                <p class="text-xs text-senses-secondary font-medium flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-senses-success rounded-full"></span> Prototipo de Flujo Híbrido (Formulario + Documento)
+                </p>
+            </div>
+        </div>
+        
+        <!-- Tab Controls -->
+        <nav class="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700">
+            <button onclick="switchTab('admin')" id="btn-tab-admin" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800 text-senses-secondary bg-slate-800/80 border border-senses-secondary/30">
+                <i data-lucide="cog" class="w-4 h-4"></i>
+                Vista Admin (Creador)
+            </button>
+            <button onclick="switchTab('psy')" id="btn-tab-psy" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800 text-slate-300">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                Vista Psicólogo (Cita Híbrida)
+            </button>
+            <button onclick="switchTab('pdf')" id="btn-tab-pdf" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800 text-slate-300">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                Reporte Consolidado
+            </button>
+        </nav>
+
+        <div class="hidden lg:flex items-center gap-2 text-xs bg-senses-primary/60 px-3 py-1.5 rounded-full border border-slate-700 text-slate-300">
+            <span class="bg-senses-success text-senses-primary font-bold text-[10px] px-2 py-0.5 rounded-full">NUEVO</span>
+            Coexistencia de Word + Formulario
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: VISTA ADMINISTRADOR (CONFIGURACIÓN HÍBRIDA) -->
+        <!-- ============================================== -->
+        <div id="tab-admin" class="tab-content space-y-6 animate-fade-in">
+            <!-- Info Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-senses-primary flex items-center gap-2">
+                            <i data-lucide="sliders" class="text-senses-secondary w-6 h-6"></i>
+                            Configuración del Protocolo Clínico
+                        </h2>
+                        <p class="text-sm text-slate-500 mt-1">Define si la prueba requerirá un documento cargado, un formulario digital, o **ambos a la vez** de forma híbrida.</p>
+                    </div>
+                    <span class="text-xs bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600 font-semibold font-mono">
+                        Estado: Híbrido Activo
+                    </span>
+                </div>
+            </div>
+
+            <!-- Workspace Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Left: Configurator Sections -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- Section 1: Traditional File Template (Word) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="file-up" class="w-4 h-4 text-senses-secondary"></i>
+                                1. Plantilla de Documento Física (Word / PDF)
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-400 mr-1">¿Habilitar?</span>
+                                <input type="checkbox" id="toggle-word" checked onchange="toggleWordTemplate(this.checked)" class="w-10 h-5 bg-slate-200 checked:bg-senses-secondary rounded-full appearance-none cursor-pointer relative before:content-[''] before:absolute before:h-4 before:w-4 before:bg-white before:rounded-full before:top-0.5 before:left-0.5 before:transition-all checked:before:translate-x-5 shadow-inner border border-slate-300">
+                            </div>
+                        </div>
+                        
+                        <div id="word-template-body" class="p-6 space-y-4">
+                            <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center bg-slate-50/50">
+                                <i data-lucide="file-text" class="w-12 h-12 text-senses-secondary mb-3"></i>
+                                <span class="font-bold text-sm text-slate-700">Triaje_Oficial_Template.docx</span>
+                                <span class="text-xs text-slate-400 mt-1">Archivo de plantilla Word cargado por el Administrador</span>
+                                <div class="flex gap-2 mt-4">
+                                    <button class="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg text-xs font-semibold text-slate-600 transition-all shadow-sm flex items-center gap-1">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Reemplazar Word
+                                    </button>
+                                    <button onclick="toggleWordTemplate(false); document.getElementById('toggle-word').checked = false;" class="px-3 py-1.5 bg-white border border-senses-danger/20 hover:bg-senses-danger/5 rounded-lg text-xs font-semibold text-senses-danger transition-all flex items-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3 h-3"></i> Desactivar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Interactive Digital Form -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="text-cursor-input" class="w-4 h-4 text-senses-secondary"></i>
+                                2. Formulario Clínico Digital (JSON Schema)
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-400 mr-1">¿Habilitar?</span>
+                                <input type="checkbox" id="toggle-form" checked onchange="toggleFormTemplate(this.checked)" class="w-10 h-5 bg-slate-200 checked:bg-senses-secondary rounded-full appearance-none cursor-pointer relative before:content-[''] before:absolute before:h-4 before:w-4 before:bg-white before:rounded-full before:top-0.5 before:left-0.5 before:transition-all checked:before:translate-x-5 shadow-inner border border-slate-300">
+                            </div>
+                        </div>
+                        
+                        <div id="form-template-body" class="p-6 space-y-4">
+                            <!-- Dynamic fields list -->
+                            <div id="fields-canvas" class="space-y-3">
+                                <!-- JS Injected Fields -->
+                            </div>
+                            
+                            <!-- Add Field Actions -->
+                            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between mt-4">
+                                <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Añadir Campo Clínico:</span>
+                                <div class="flex gap-2">
+                                    <button onclick="addField('number')" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-senses-secondary hover:text-senses-secondary rounded-lg text-xs font-semibold text-slate-600 transition-all shadow-sm">
+                                        <i data-lucide="hash" class="w-3 h-3"></i> Número
+                                    </button>
+                                    <button onclick="addField('text')" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-senses-secondary hover:text-senses-secondary rounded-lg text-xs font-semibold text-slate-600 transition-all shadow-sm">
+                                        <i data-lucide="type" class="w-3 h-3"></i> Texto Corto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right: Database Schema Preview -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 text-slate-300 font-mono text-xs flex flex-col justify-between h-full min-h-[400px]">
+                        <div>
+                            <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-800">
+                                <span class="text-slate-400 font-bold flex items-center gap-1.5">
+                                    <i data-lucide="database" class="w-3.5 h-3.5 text-senses-secondary"></i>
+                                    Test (Registro en DB)
+                                </span>
+                                <span class="bg-slate-800 text-[10px] text-slate-400 px-2 py-0.5 rounded">Prisma</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">documentId (Relación Word)</span>
+                                    <span id="db-doc-state" class="text-senses-secondary font-semibold font-mono">"doc-uuid-93821-oficial"</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] text-slate-500 uppercase font-bold mb-1">templateContent (JSON Schema)</span>
+                                    <pre id="json-schema-preview" class="overflow-x-auto custom-scroll max-h-48 leading-relaxed text-senses-secondary font-mono text-[10px] bg-slate-950 p-3 rounded border border-slate-800 mt-1"></pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-4 border-t border-slate-800 pt-3">
+                            ¡La base de datos guarda **ambos** elementos al mismo tiempo! Si uno se desactiva, su campo queda en `null`.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: VISTA PSICÓLOGO (CITA INTEGRADA HÍBRIDA) -->
+        <!-- ============================================== -->
+        <div id="tab-psy" class="tab-content space-y-6 hidden animate-fade-in">
+            <!-- Patient Header -->
+            <div class="bg-senses-primary text-white rounded-2xl p-6 shadow-sm border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-senses-secondary/20 text-senses-secondary w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl font-outfit">
+                        AL
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold font-outfit">Ana López Rodríguez</h2>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-300 mt-1 font-medium">
+                            <span class="flex items-center gap-1"><i data-lucide="fingerprint" class="w-3.5 h-3.5"></i> DNI: 72839401</span>
+                            <span class="flex items-center gap-1"><i data-lucide="cake" class="w-3.5 h-3.5"></i> Edad: 26 años</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-xs">
+                    <span class="text-slate-400">Prueba asignada: </span>
+                    <span class="text-white font-bold text-sm block">Ficha de Triaje Médico</span>
+                </div>
+            </div>
+
+            <!-- Interactive Hybrid Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-base">Ficha de Triaje Médico</h3>
+                        <p class="text-xs text-slate-500">Esta evaluación está configurada de manera **Híbrida**. Puedes usar el formulario, el Word, o ambos.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span id="badge-form-status" class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Formulario: Vacío</span>
+                        <span id="badge-file-status" class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Documento: Ninguno</span>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                    
+                    <!-- Form Block -->
+                    <div id="psy-block-form" class="space-y-4 pb-6 md:pb-0">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-senses-primary text-sm flex items-center gap-1.5">
+                                <i data-lucide="text-cursor-input" class="w-4 h-4 text-senses-secondary"></i>
+                                Opción A: Formulario Digital Web
+                            </h4>
+                            <span id="form-check-icon" class="text-slate-300"><i data-lucide="circle" class="w-4 h-4"></i></span>
+                        </div>
+                        <p class="text-xs text-slate-400">Rellena el formulario interactivo para registrar signos vitales y datos clínicos rápidamente en pantalla.</p>
+                        
+                        <div id="psy-interactive-form" class="space-y-4 pt-2">
+                            <!-- Injected fields from JS -->
+                        </div>
+                    </div>
+
+                    <!-- File Block -->
+                    <div id="psy-block-word" class="space-y-4 pt-6 md:pt-0 md:pl-8 flex flex-col justify-between">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-senses-primary text-sm flex items-center gap-1.5">
+                                    <i data-lucide="file-up" class="w-4 h-4 text-senses-secondary"></i>
+                                    Opción B: Documento Adjunto (Word / PDF)
+                                </h4>
+                                <span id="file-check-icon" class="text-slate-300"><i data-lucide="circle" class="w-4 h-4"></i></span>
+                            </div>
+                            <p class="text-xs text-slate-400">Descarga la plantilla oficial en Word, edítala localmente y vuelve a subirla para mantener el registro físico original.</p>
+
+                            <!-- File Uploader Component -->
+                            <div class="border-2 border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col items-center justify-center text-center">
+                                <div class="flex gap-2">
+                                    <button class="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg text-xs font-semibold text-slate-700 transition-all flex items-center gap-1.5 shadow-sm">
+                                        <i data-lucide="download" class="w-3.5 h-3.5 text-senses-secondary"></i>
+                                        Descargar Plantilla
+                                    </button>
+                                    
+                                    <!-- Hidden Input File Trick -->
+                                    <label class="px-3 py-1.5 bg-senses-primary text-white hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                        Subir Ficha Completa
+                                        <input type="file" class="hidden" onchange="handleMockFileChange(this)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Uploaded File Status Display -->
+                        <div id="uploaded-file-banner" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex justify-between items-center hidden">
+                            <div class="flex items-center gap-2 text-xs">
+                                <i data-lucide="file-check" class="text-senses-success w-4.5 h-4.5"></i>
+                                <div>
+                                    <span id="uploaded-filename" class="font-bold text-slate-700">Ficha_Triaje_Ana.pdf</span>
+                                    <span class="text-[10px] text-slate-400 block">Archivo listo para asociar al historial</span>
+                                </div>
+                            </div>
+                            <button onclick="removeMockFile()" class="text-slate-400 hover:text-senses-danger transition-all">
+                                <i data-lucide="x" class="w-4.5 h-4.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer Save Action -->
+                <div class="bg-slate-50 border-t border-slate-200 p-6 flex justify-between items-center">
+                    <div class="text-xs text-slate-500">Puedes guardar las respuestas del formulario, el archivo, o ambos simultáneamente.</div>
+                    <button onclick="saveHybridTestData()" class="flex items-center gap-2 px-6 py-3 bg-senses-primary text-white hover:bg-slate-800 rounded-xl font-bold transition-all shadow-md">
+                        <i data-lucide="save" class="w-4.5 h-4.5"></i>
+                        Guardar Ficha Médica
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: REPORTE CONSOLIDADO (PDF OFICIAL) -->
+        <!-- ============================================== -->
+        <div id="tab-pdf" class="tab-content space-y-6 hidden animate-fade-in">
+            <!-- Control bar (No-print) -->
+            <div class="no-print bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-senses-primary flex items-center gap-2">
+                        <i data-lucide="check-circle" class="text-senses-success w-5 h-5"></i>
+                        Ficha Médica Consolidada y Registrada
+                    </h2>
+                    <p class="text-sm text-slate-500">A continuación se muestra el reporte final del paciente en base al formulario y los adjuntos cargados.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2.5 bg-senses-primary text-white hover:bg-slate-800 rounded-xl font-semibold text-sm transition-all shadow-md">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        Imprimir Ficha
+                    </button>
+                    <button onclick="switchTab('psy')" class="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl font-semibold text-sm text-slate-700 transition-all">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Volver a Cita
+                    </button>
+                </div>
+            </div>
+
+            <!-- A4 Sheet Mock -->
+            <div class="print-container bg-white rounded-2xl border border-slate-200 shadow-xl max-w-4xl mx-auto p-12 space-y-8 min-h-[297mm] flex flex-col justify-between">
+                
+                <div class="space-y-8">
+                    <!-- Header -->
+                    <div class="flex justify-between items-start border-b-2 border-senses-primary pb-6">
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-black text-senses-primary tracking-tight">SENSES PSICÓLOGO S.A.C.</h2>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Centro de Atención Psicológica Integral</p>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <span class="bg-senses-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Ficha Híbrida de Triaje</span>
+                            <p class="text-xs text-slate-500 mt-2 font-medium">Fecha: <span id="report-date" class="font-bold text-slate-800"></span></p>
+                        </div>
+                    </div>
+
+                    <!-- Section 1: Patient Details -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-senses-primary bg-slate-100 px-3 py-1.5 rounded uppercase tracking-wider">1. Datos del Paciente</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6 text-xs">
+                            <div>
+                                <span class="block text-[10px] text-slate-400 uppercase font-semibold">Nombres y Apellidos</span>
+                                <span class="font-bold text-slate-800">Ana López Rodríguez</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-400 uppercase font-semibold">DNI</span>
+                                <span class="font-bold text-slate-800">72839401</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-400 uppercase font-semibold">Edad</span>
+                                <span class="font-bold text-slate-800">26 años</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Clinical Form Results -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-senses-primary bg-slate-100 px-3 py-1.5 rounded uppercase tracking-wider">2. Respuestas Registradas (Formulario)</h3>
+                        <div id="report-form-answers" class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-6 text-xs">
+                            <!-- Dynamic form answers injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Physical Documents Attached -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-senses-primary bg-slate-100 px-3 py-1.5 rounded uppercase tracking-wider">3. Historial de Documentación Física Adjunta</h3>
+                        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="file-check" class="text-senses-success w-5 h-5"></i>
+                                <div>
+                                    <span id="report-word-filename" class="font-bold text-slate-700 block">Triaje_Fisico_Firmado.pdf</span>
+                                    <span class="text-[10px] text-slate-400">Documento cargado por el psicólogo y enlazado al historial</span>
+                                </div>
+                            </div>
+                            <span class="bg-senses-success/20 text-senses-success px-2.5 py-0.5 rounded-full font-bold text-[10px]">Cargado y Seguro</span>
+                        </div>
+                        <div id="report-word-missing" class="text-xs text-slate-400 italic py-2 hidden">
+                            Ningún documento de Word/PDF adicional fue adjuntado a esta evaluación.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Signatures -->
+                <div class="pt-12">
+                    <div class="grid grid-cols-2 gap-12 text-center text-xs">
+                        <div class="flex flex-col items-center">
+                            <div class="border-t border-slate-300 w-48 pt-2 font-semibold text-slate-600">Firma del Especialista</div>
+                            <p class="text-[10px] text-slate-400">Dr. Carlos Mendoza - C.Ps.P 29381</p>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="border-t border-slate-300 w-48 pt-2 font-semibold text-slate-600">Firma o Huella del Paciente</div>
+                            <p class="text-[10px] text-slate-400">DNI: 72839401</p>
+                        </div>
+                    </div>
+                    <div class="text-center text-[9px] text-slate-400 mt-12 border-t border-slate-100 pt-4">
+                        Este consolidado médico se generó electrónicamente combinando la base de datos de formularios de Senses S.A.C. con los archivos físicos cargados.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER (NO-PRINT) -->
+    <footer class="no-print bg-white border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
+        <p>© 2026 Senses Psicólogo S.A.C. | Todos los derechos reservados. Desarrollado por el Grupo PISW2025.</p>
+    </footer>
+
+    <!-- ============================================== -->
+    <!-- JAVASCRIPT STATE & LOGIC -->
+    <!-- ============================================== -->
+    <script>
+        // Initial form fields
+        let formFields = [
+            { id: 'peso', label: 'Peso Corporal (kg)', type: 'number', required: true, value: '70' },
+            { id: 'talla', label: 'Talla (cm)', type: 'number', required: true, value: '172' },
+            { id: 'presion', label: 'Presión Arterial (mmHg)', type: 'text', required: false, value: '120/80' },
+            { id: 'temperatura', label: 'Temperatura (°C)', type: 'number', required: false, value: '36.8' }
+        ];
+
+        // Is each option active in admin?
+        let isWordActive = true;
+        let isFormActive = true;
+
+        // Psychologist uploads file state
+        let uploadedFile = { name: 'Triaje_Fisico_Firmado.pdf' };
+        let isFileAttached = true;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.getElementById('report-date').innerText = new Date().toLocaleDateString('es-PE', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            renderAdminCanvas();
+            updateJSONPreview();
+        });
+
+        // Toggle Word Option from Admin
+        function toggleWordTemplate(val) {
+            isWordActive = val;
+            const body = document.getElementById('word-template-body');
+            const dbState = document.getElementById('db-doc-state');
+            
+            if (val) {
+                body.classList.remove('opacity-40', 'pointer-events-none');
+                dbState.innerText = '"doc-uuid-93821-oficial"';
+                dbState.className = "text-senses-secondary font-semibold font-mono";
+            } else {
+                body.classList.add('opacity-40', 'pointer-events-none');
+                dbState.innerText = "null (Desactivado)";
+                dbState.className = "text-senses-danger font-semibold font-mono";
+            }
+        }
+
+        // Toggle Form Option from Admin
+        function toggleFormTemplate(val) {
+            isFormActive = val;
+            const body = document.getElementById('form-template-body');
+            if (val) {
+                body.classList.remove('opacity-40', 'pointer-events-none');
+            } else {
+                body.classList.add('opacity-40', 'pointer-events-none');
+            }
+            updateJSONPreview();
+        }
+
+        // Switch Active Tab
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const navButtons = document.querySelectorAll('header nav button');
+            navButtons.forEach(btn => {
+                btn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800 text-slate-300";
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+            activeBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800 text-senses-secondary bg-slate-800/80 border border-senses-secondary/30";
+            
+            if (tabId === 'psy') {
+                renderPsyViews();
+            } else if (tabId === 'pdf') {
+                renderPDFView();
+            } else if (tabId === 'admin') {
+                renderAdminCanvas();
+            }
+        }
+
+        // ==============================================
+        // ADMIN TAB (FORM BUILDER)
+        // ==============================================
+        function renderAdminCanvas() {
+            const canvas = document.getElementById('fields-canvas');
+            canvas.innerHTML = '';
+            
+            formFields.forEach((field, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between gap-4 transition-all hover:border-slate-300";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 flex-1">
+                        <div class="bg-senses-primary/10 text-senses-primary w-6 h-6 rounded flex items-center justify-center font-bold text-xs">
+                            ${index + 1}
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                            <div>
+                                <input type="text" value="${field.label}" onchange="updateField(${index}, 'label', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 font-semibold focus:outline-none focus:border-senses-secondary">
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="flex-1">
+                                    <select onchange="updateField(${index}, 'type', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-600 focus:outline-none">
+                                        <option value="number" ${field.type === 'number' ? 'selected' : ''}>Número</option>
+                                        <option value="text" ${field.type === 'text' ? 'selected' : ''}>Texto Corto</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="checkbox" ${field.required ? 'checked' : ''} onchange="updateField(${index}, 'required', this.checked)" class="w-3.5 h-3.5 text-senses-secondary rounded cursor-pointer">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase">Oblig.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="removeField(${index})" class="text-slate-400 hover:text-senses-danger transition-all p-1 hover:bg-slate-100 rounded">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                canvas.appendChild(div);
+            });
+            lucide.createIcons();
+            updateJSONPreview();
+        }
+
+        function addField(type) {
+            const defaults = {
+                number: { label: 'Nuevo Campo numérico', type: 'number', required: false, value: '0' },
+                text: { label: 'Nuevo Campo de texto', type: 'text', required: false, value: '' }
+            };
+            formFields.push({ id: `campo_${Date.now()}`, ...defaults[type] });
+            renderAdminCanvas();
+        }
+
+        function updateField(index, key, value) {
+            formFields[index][key] = value;
+            updateJSONPreview();
+        }
+
+        function removeField(index) {
+            formFields.splice(index, 1);
+            renderAdminCanvas();
+        }
+
+        function updateJSONPreview() {
+            if (!isFormActive) {
+                document.getElementById('json-schema-preview').innerText = "null (Desactivado)";
+                return;
+            }
+            const schema = formFields.map(f => ({ id: f.id, label: f.label, type: f.type, required: f.required }));
+            document.getElementById('json-schema-preview').innerText = JSON.stringify(schema, null, 2);
+        }
+
+        // ==============================================
+        // PSYCHOLOGIST TAB (HYBRID CITA)
+        // ==============================================
+        function renderPsyViews() {
+            // Badges update
+            const formBadge = document.getElementById('badge-form-status');
+            const fileBadge = document.getElementById('badge-file-status');
+            
+            // Check form badge
+            const isAnyFormValueFilled = formFields.some(f => f.value && f.value !== '0' && f.value !== '');
+            if (!isFormActive) {
+                formBadge.innerText = "Formulario: Desactivado";
+                formBadge.className = "bg-slate-100 text-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            } else if (isAnyFormValueFilled) {
+                formBadge.innerText = "Formulario: Lleno";
+                formBadge.className = "bg-senses-success/20 text-senses-success text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            } else {
+                formBadge.innerText = "Formulario: Pendiente";
+                formBadge.className = "bg-senses-danger/10 text-senses-danger text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            }
+
+            // Check file badge
+            if (!isWordActive) {
+                fileBadge.innerText = "Documento: Desactivado";
+                fileBadge.className = "bg-slate-100 text-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            } else if (isFileAttached) {
+                fileBadge.innerText = "Documento: Cargado";
+                fileBadge.className = "bg-senses-success/20 text-senses-success text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            } else {
+                fileBadge.innerText = "Documento: Ninguno";
+                fileBadge.className = "bg-senses-danger/10 text-senses-danger text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider";
+            }
+
+            // Form Block Visibility
+            const formBlock = document.getElementById('psy-block-form');
+            if (isFormActive) {
+                formBlock.classList.remove('opacity-30', 'pointer-events-none');
+                renderPsyFormFields();
+                document.getElementById('form-check-icon').innerHTML = isAnyFormValueFilled ? '<i data-lucide="check-circle" class="text-senses-success w-4.5 h-4.5"></i>' : '<i data-lucide="circle" class="text-slate-300 w-4.5 h-4.5"></i>';
+            } else {
+                formBlock.classList.add('opacity-30', 'pointer-events-none');
+                document.getElementById('psy-interactive-form').innerHTML = '<div class="text-xs text-slate-400 italic">Esta opción no ha sido habilitada por el Administrador.</div>';
+                document.getElementById('form-check-icon').innerHTML = '<i data-lucide="slash" class="text-slate-300 w-4.5 h-4.5"></i>';
+            }
+
+            // Word Block Visibility
+            const wordBlock = document.getElementById('psy-block-word');
+            if (isWordActive) {
+                wordBlock.classList.remove('opacity-30', 'pointer-events-none');
+                document.getElementById('file-check-icon').innerHTML = isFileAttached ? '<i data-lucide="check-circle" class="text-senses-success w-4.5 h-4.5"></i>' : '<i data-lucide="circle" class="text-slate-300 w-4.5 h-4.5"></i>';
+                
+                // Show uploaded file banner if active
+                const fileBanner = document.getElementById('uploaded-file-banner');
+                if (isFileAttached) {
+                    fileBanner.classList.remove('hidden');
+                    document.getElementById('uploaded-filename').innerText = uploadedFile.name;
+                } else {
+                    fileBanner.classList.add('hidden');
+                }
+            } else {
+                wordBlock.classList.add('opacity-30', 'pointer-events-none');
+                document.getElementById('file-check-icon').innerHTML = '<i data-lucide="slash" class="text-slate-300 w-4.5 h-4.5"></i>';
+                document.getElementById('uploaded-file-banner').classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        function renderPsyFormFields() {
+            const formContainer = document.getElementById('psy-interactive-form');
+            formContainer.innerHTML = '';
+            
+            formFields.forEach((field, index) => {
+                const div = document.createElement('div');
+                div.className = "space-y-1";
+                div.innerHTML = `
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        ${field.label} ${field.required ? '<span class="text-senses-danger font-bold">*</span>' : ''}
+                    </label>
+                    <input type="${field.type === 'number' ? 'number' : 'text'}" value="${field.value || ''}" onchange="updateValue(${index}, this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-senses-secondary transition-all">
+                `;
+                formContainer.appendChild(div);
+            });
+        }
+
+        function updateValue(index, val) {
+            formFields[index].value = val;
+            renderPsyViews(); // Update badges dynamically!
+        }
+
+        // Mock upload action
+        function handleMockFileChange(input) {
+            if (input.files && input.files[0]) {
+                uploadedFile = { name: input.files[0].name };
+                isFileAttached = true;
+                renderPsyViews();
+            }
+        }
+
+        function removeMockFile() {
+            uploadedFile = { name: '' };
+            isFileAttached = false;
+            renderPsyViews();
+        }
+
+        function saveHybridTestData() {
+            switchTab('pdf');
+        }
+
+        // ==============================================
+        // PDF VIEW TAB (CONSOLIDATED REPORT)
+        // ==============================================
+        function renderPDFView() {
+            // Form values list
+            const formAnswersContainer = document.getElementById('report-form-answers');
+            formAnswersContainer.innerHTML = '';
+            
+            if (isFormActive && formFields.length > 0) {
+                formFields.forEach(field => {
+                    const div = document.createElement('div');
+                    div.className = "space-y-0.5";
+                    div.innerHTML = `
+                        <span class="block text-[10px] text-slate-400 uppercase font-semibold">${field.label}</span>
+                        <span class="font-bold text-slate-800 text-xs">${field.value || '---'}</span>
+                    `;
+                    formAnswersContainer.appendChild(div);
+                });
+            } else {
+                formAnswersContainer.innerHTML = `
+                    <div class="col-span-3 text-slate-400 italic">No se configuró ni completó ningún formulario dinámico en esta evaluación.</div>
+                `;
+            }
+
+            // File attachment status check
+            const wordFilename = document.getElementById('report-word-filename');
+            const wordMissing = document.getElementById('report-word-missing');
+            const fileRow = wordFilename.closest('div.border');
+            
+            if (isWordActive && isFileAttached) {
+                fileRow.classList.remove('hidden');
+                wordFilename.innerText = uploadedFile.name;
+                wordMissing.classList.add('hidden');
+            } else {
+                fileRow.classList.add('hidden');
+                wordMissing.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
