@@ -25,6 +25,8 @@ export const EditEvaluation = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // PROTOTIPO HÍBRIDO: Un solo modal para carga de Word (el formulario se diseña inline)
   const [isAddTestModalOpen, setIsAddTestModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const { showAlert } = useAlert();
@@ -72,8 +74,9 @@ export const EditEvaluation = () => {
     name: string;
     description: string;
     filename: string;
-    testFile: File;
+    testFile?: File;
     isNew: boolean;
+    templateContent?: string;
   }) => {
     const currentTests = form.getValues("psychologicalTests");
     form.setValue("psychologicalTests", [...currentTests, test]);
@@ -133,37 +136,36 @@ export const EditEvaluation = () => {
       const newTests = data.psychologicalTests.filter((test) => test.isNew);
 
       if (newTests.length > 0) {
-        showAlert("Subiendo archivos nuevos...", "info");
+        showAlert("Procesando nuevas pruebas...", "info");
 
-        // Subir archivos y crear tests
+        // Subir archivos y crear tests (híbrido)
         const testsWithUrls = await Promise.all(
           newTests.map(async (test) => {
+            let filePath = "";
             if (test.testFile) {
-              const filePath = await uploadFile(test.testFile, test.filename);
-              return {
-                name: test.name,
-                description: test.description,
-                filename: test.filename,
-                filePath,
-                evaluationId: evaluationData.id,
-                createdById: user?.id || "",
-              };
+              filePath = await uploadFile(test.testFile, test.filename);
             }
-            return null;
+            return {
+              name: test.name,
+              description: test.description || "",
+              filename: test.filename,
+              filePath: filePath || null,
+              evaluationId: evaluationData.id,
+              createdById: user?.id || "",
+              templateContent: (test as any).templateContent || null,
+            };
           })
         );
 
-        const validTests = testsWithUrls.filter((test) => test !== null);
-
-        console.log("Nuevos tests a crear:", validTests);
+        console.log("Nuevos tests a crear en Base de Datos:", testsWithUrls);
 
         createTestsBatch(
-          { testsToCreate: validTests },
+          { testsToCreate: testsWithUrls },
           {
             onSuccess: () => {
               console.log("Pruebas creadas exitosamente");
               showAlert(
-                `Evaluación actualizada con ${validTests.length} nueva(s) prueba(s)`,
+                `Evaluación actualizada con ${testsWithUrls.length} nueva(s) prueba(s)`,
                 "success"
               );
             },
@@ -200,6 +202,7 @@ export const EditEvaluation = () => {
         handleCancel={handleCancel}
         loading={loading}
       />
+      {/* Modal: Carga de Word clásica */}
       <AddTestModal
         isOpen={isAddTestModalOpen}
         onClose={() => setIsAddTestModalOpen(false)}
