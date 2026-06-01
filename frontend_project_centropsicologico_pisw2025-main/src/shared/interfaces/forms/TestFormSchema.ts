@@ -6,21 +6,7 @@ export const testFormSchema = z.object({
     .string()
     .max(255, "La descripción no puede exceder los 255 caracteres")
     .optional(),
-  testFile: z.any(),
-})
-  .superRefine((data, ctx) => {
-    if (
-      !(
-        (data.testFile.length > 0) ||
-        data.testFile[0] instanceof File
-      )
-    ) {
-      ctx.addIssue({
-        path: ["testFile"],
-        code: z.ZodIssueCode.custom,
-        message: "Debe adjuntar un archivo para la prueba",
-      });
-    }
-  });
+  testFile: z.any().optional(),
+});
 
 export type TestFormSchema = z.infer<typeof testFormSchema>;
