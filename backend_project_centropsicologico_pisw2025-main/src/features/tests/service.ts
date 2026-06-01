@@ -180,16 +180,20 @@ export const createTestsBatchService = async (data: CreateTestsBatchInput) => {
           evaluation: {
             connect: { id: testData.evaluationId },
           },
-          document: {
-            create: {
-              name: testData.filename,
-              type: "TEMPLATE",
-              filePath: testData.filePath,
-              user: {
-                connect: { id: testData.createdById },
-              },
-            },
-          },
+          ...(testData.filePath
+            ? {
+                document: {
+                  create: {
+                    name: testData.filename!,
+                    type: "TEMPLATE",
+                    filePath: testData.filePath,
+                    user: {
+                      connect: { id: testData.createdById },
+                    },
+                  },
+                },
+              }
+            : {}),
         },
       });
 
