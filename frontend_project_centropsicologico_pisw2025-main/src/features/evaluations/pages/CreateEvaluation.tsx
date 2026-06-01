@@ -190,7 +190,7 @@ export const CreateEvaluation = () => {
         showAlert("Evaluación creada correctamente", "success");
       }
 
-      navigate(`/evaluations/${createdEvaluation.id}`);
+      navigate("/evaluations");
     } catch (error) {
       console.error("Error creating evaluation:", error);
       showAlert("Error al crear la evaluación", "error");
