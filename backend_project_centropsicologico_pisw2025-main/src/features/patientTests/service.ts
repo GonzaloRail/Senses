@@ -109,6 +109,14 @@ export const getPatientTestByIdService = async ({
           type: true,
         },
       },
+      // Respuesta de formulario dinámico (si submissionMode = FORM)
+      formSubmission: {
+        include: {
+          formTemplate: {
+            select: { id: true, name: true, fieldsSchema: true },
+          },
+        },
+      },
     },
   });
 
@@ -134,6 +142,7 @@ export const createPatientTestService = async (
         connect: { id: data.completedById },
       },
       isGeneralDoc: data.isGeneralDoc ?? false,
+      submissionMode: data.submissionMode ?? "DOCUMENT",
       ...(data.documentId && {
         document: {
           connect: { id: data.documentId },

@@ -31,6 +31,8 @@ import { DashboardRouter } from "./src/features/dashboard";
 import { startEmployeeLeaveReactivationScheduler } from "./src/lib/employeeLeaveScheduler";
 import { StorageRouter } from "./src/cloudStorage";
 import { setupSwagger } from "./src/swagger";
+import { FormTemplateRouter } from "./src/features/formTemplates";
+import { FormSubmissionRouter } from "./src/features/formSubmissions";
 
 const app = express();
 
@@ -79,6 +81,8 @@ app.use("/api/v1", EvaluationRouter);
 app.use("/api/v1", PatientTestRouter);
 app.use("/api/v1", DashboardRouter);
 app.use("/api/v1", StorageRouter);
+app.use("/api/v1", FormTemplateRouter);
+app.use("/api/v1", FormSubmissionRouter);
 
 app.use(errorHandler);
 
