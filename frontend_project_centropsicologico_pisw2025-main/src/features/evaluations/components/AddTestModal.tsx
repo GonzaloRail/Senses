@@ -71,7 +71,7 @@ export const AddTestModal = ({ isOpen, onSave, onClose }: AddTestModalProps) => 
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md gap-1">
         <DialogHeader>
-          <DialogTitle>Agregar nueva prueba</DialogTitle>
+          <DialogTitle className="font-bold text-senses-primary font-outfit">Agregar nueva plantilla Word</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} >
           <div className="flex flex-col flex-1">

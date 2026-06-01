@@ -21,6 +21,8 @@ export const CreateEvaluation = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // PROTOTIPO HÍBRIDO: Un solo modal para carga de Word (el formulario se diseña inline)
   const [isAddTestModalOpen, setIsAddTestModalOpen] = useState(false);
   const { showAlert } = useAlert();
 
@@ -42,8 +44,9 @@ export const CreateEvaluation = () => {
     name: string;
     description: string;
     filename: string;
-    testFile: File;
+    testFile?: File;
     isNew: boolean;
+    templateContent?: string;
   }) => {
     const currentTests = form.getValues("psychologicalTests");
     form.setValue("psychologicalTests", [...currentTests, test]);
@@ -51,12 +54,10 @@ export const CreateEvaluation = () => {
 
   const handleRemoveTest = (index: number) => {
     const currentTests = form.getValues("psychologicalTests");
-    console.log(currentTests);
     form.setValue(
       "psychologicalTests",
       currentTests.filter((_, i) => i !== index)
     );
-    console.log(form.getValues("psychologicalTests"));
     showAlert("Prueba eliminada", "success");
   };
 
@@ -90,38 +91,40 @@ export const CreateEvaluation = () => {
         );
       });
 
-      // 2. Si hay pruebas, subirlas a Supabase y crear los tests
+      // 2. Si hay pruebas, procesarlas (híbrido) y cargarlas al backend
       if (data.psychologicalTests && data.psychologicalTests.length > 0) {
-        showAlert("Subiendo archivos...", "info");
+        showAlert("Procesando pruebas e informes...", "info");
 
-        // Subir todos los archivos y obtener sus URLs
+        // Procesar todos los tests por separado
         const testsWithUrls = await Promise.all(
           data.psychologicalTests.map(async (test) => {
+            let filePath = "";
+            // Si tiene plantilla de Word adjunta, la subimos a Supabase/Local
             if (test.testFile) {
-              const filePath = await uploadFile(test.testFile, test.filename);
-              return {
-                name: test.name,
-                description: test.description,
-                filename: test.filename,
-                filePath,
-                evaluationId: createdEvaluation.id,
-                createdById: user?.id,
-              };
+              filePath = await uploadFile(test.testFile, test.filename);
             }
-            return null;
+            
+            return {
+              name: test.name,
+              description: test.description || "",
+              filename: test.filename,
+              filePath: filePath || null,
+              evaluationId: createdEvaluation.id,
+              createdById: user?.id,
+              // PROTOTIPO HÍBRIDO: Agregamos el JSON de las preguntas que se guardará en Test.templateContent
+              templateContent: (test as any).templateContent || null, 
+            };
           })
         );
 
-        // Filtrar nulls y crear todos los tests
-        const validTests = testsWithUrls.filter((test) => test !== null);
-        console.log("Tests a crear:", validTests);
+        console.log("Tests a crear en Base de Datos:", testsWithUrls);
 
         createTestsBatch(
-          { testsToCreate: validTests },
+          { testsToCreate: testsWithUrls },
           {
             onSuccess: () => {
               showAlert(
-                `Evaluación creada con ${validTests.length} prueba(s)`,
+                `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
                 "success"
               );
             },
@@ -159,6 +162,7 @@ export const CreateEvaluation = () => {
         handleCancel={handleCancel}
         loading={loading}
       />
+      {/* Modal: Carga de Word clásica */}
       <AddTestModal
         isOpen={isAddTestModalOpen}
         onClose={() => setIsAddTestModalOpen(false)}
