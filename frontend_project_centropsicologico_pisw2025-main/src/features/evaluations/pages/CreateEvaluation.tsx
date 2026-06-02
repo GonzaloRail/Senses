@@ -144,48 +144,53 @@ export const CreateEvaluation = () => {
 
         console.log("Tests a crear en Base de Datos:", testsWithUrls);
 
-        createTestsBatch(
-          { testsToCreate: testsWithUrls },
-          {
-            onSuccess: async (batchResponse) => {
-              // Si hay formularios dinámicos creados inline, los subimos a su respectiva API
-              const createdTests = (batchResponse as any).tests || [];
-              
-              await Promise.all(
-                createdTests.map(async (createdTest: any) => {
-                  const originalTest = data.psychologicalTests?.find(
-                    (t) => t.name === createdTest.name
-                  );
+        await new Promise<void>((resolve, reject) => {
+          createTestsBatch(
+            { testsToCreate: testsWithUrls },
+            {
+              onSuccess: async (batchResponse) => {
+                // Si hay formularios dinámicos creados inline, los subimos a su respectiva API
+                const createdTests = (batchResponse as any).tests || [];
+                
+                await Promise.all(
+                  createdTests.map(async (createdTest: any, index: number) => {
+                    const originalTest = data.psychologicalTests?.[index];
 
-                  if (originalTest && (originalTest as any).templateContent) {
-                    const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
-                    if (fieldsSchema.length > 0) {
-                      try {
-                        await createFormTemplateApi({
-                          formTemplate: {
-                            name: createdTest.name,
-                            description: createdTest.description || "",
-                            isDefault: false,
-                            fieldsSchema,
-                            createdById: user?.id || "",
-                            testId: createdTest.id,
-                          }
-                        });
-                      } catch (err) {
-                        console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                    if (originalTest && (originalTest as any).templateContent) {
+                      const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
+                      if (fieldsSchema.length > 0) {
+                        try {
+                          await createFormTemplateApi({
+                            formTemplate: {
+                              name: createdTest.name,
+                              description: createdTest.description || "",
+                              isDefault: false,
+                              fieldsSchema,
+                              createdById: user?.id || "",
+                              testId: createdTest.id,
+                            }
+                          });
+                        } catch (err) {
+                          console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                        }
                       }
                     }
-                  }
-                })
-              );
+                  })
+                );
 
-              showAlert(
-                `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
-                "success"
-              );
-            },
-          }
-        );
+                showAlert(
+                  `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
+                  "success"
+                );
+                resolve();
+              },
+              onError: (err) => {
+                console.error("Error al crear pruebas:", err);
+                reject(err);
+              }
+            }
+          );
+        });
       } else {
         showAlert("Evaluación creada correctamente", "success");
       }

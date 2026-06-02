@@ -11,6 +11,7 @@ import { EmptyState } from "@/shared/components/EmptyState";
 import { Loading } from "@/shared/components/Loading";
 import { useState } from "react";
 import { useAlert } from "@/shared/hooks/useAlert";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface EvaluationBaseFormProps {
   onSubmit: (data: any) => void;
@@ -63,6 +64,9 @@ export const EvaluationBaseForm = ({
   const [inlineTestName, setInlineTestName] = useState("");
   const [inlineTestDesc, setInlineTestDesc] = useState("");
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
+  const [editingTestIndex, setEditingTestIndex] = useState<number | null>(null);
+  const [previewFormQuestions, setPreviewFormQuestions] = useState<any[] | null>(null);
+  const [previewFormTitle, setPreviewFormTitle] = useState<string>("");
 
   const getTitle = () => {
     switch (mode) {
@@ -168,6 +172,11 @@ export const EvaluationBaseForm = ({
       return;
     }
 
+    // Si estábamos editando, eliminamos temporalmente el test original de la lista
+    if (editingTestIndex !== null && onRemoveTest) {
+      onRemoveTest(editingTestIndex);
+    }
+
     const newTest = {
       name: inlineTestName,
       description: inlineTestDesc,
@@ -176,15 +185,17 @@ export const EvaluationBaseForm = ({
       templateContent: JSON.stringify(questions), // Serializamos el esquema completo
     };
 
-    const currentTests = getValues("psychologicalTests") || [];
-    setValue("psychologicalTests", [...currentTests, newTest]);
+    // Obtenemos la lista después del remove
+    const listWithoutEdited = getValues("psychologicalTests") || [];
+    setValue("psychologicalTests", [...listWithoutEdited, newTest]);
 
     // Limpiar estados locales
     setInlineTestName("");
     setInlineTestDesc("");
     setQuestions([]);
     setIsDesigningForm(false);
-    showAlert("Formulario digital agregado temporalmente con éxito. Guarda la evaluación para confirmar.", "success");
+    setEditingTestIndex(null);
+    showAlert("Formulario digital guardado con éxito. Guarda la evaluación general para confirmar.", "success");
   };
 
   const handleCancelInlineForm = () => {
@@ -192,6 +203,7 @@ export const EvaluationBaseForm = ({
     setInlineTestDesc("");
     setQuestions([]);
     setIsDesigningForm(false);
+    setEditingTestIndex(null);
   };
 
   if (loading) {
@@ -475,6 +487,31 @@ export const EvaluationBaseForm = ({
                         key={test.fileurl || index}
                         {...test}
                         isViewMode={isViewMode}
+                        onEdit={
+                          (test as any).templateContent
+                            ? () => {
+                                if (isViewMode) {
+                                  try {
+                                    setPreviewFormQuestions(JSON.parse((test as any).templateContent));
+                                    setPreviewFormTitle(test.name);
+                                  } catch (e) {
+                                    console.error("Error parsing form questions on preview", e);
+                                  }
+                                } else {
+                                  setEditingTestIndex(index);
+                                  setInlineTestName(test.name);
+                                  setInlineTestDesc(test.description || "");
+                                  try {
+                                    setQuestions(JSON.parse((test as any).templateContent));
+                                  } catch (e) {
+                                    console.error("Error parsing form questions on edit", e);
+                                    setQuestions([]);
+                                  }
+                                  setIsDesigningForm(true);
+                                }
+                              }
+                            : undefined
+                        }
                         onRemove={
                           !isViewMode && onRemoveTest
                             ? () => onRemoveTest(index)
@@ -555,6 +592,67 @@ export const EvaluationBaseForm = ({
           )}
         </div>
       </form>
+
+      {/* Modal de Vista Previa del Formulario Digital */}
+      <Dialog open={previewFormQuestions !== null} onOpenChange={() => setPreviewFormQuestions(null)}>
+        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto custom-scroll">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold font-outfit text-senses-primary flex items-center gap-2">
+              <LayoutGrid className="text-senses-secondary w-5 h-5" />
+              Vista Previa: {previewFormTitle}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            {previewFormQuestions && previewFormQuestions.length === 0 ? (
+              <p className="text-sm text-slate-500 italic">Este formulario no tiene preguntas.</p>
+            ) : (
+              <div className="space-y-3">
+                {previewFormQuestions?.map((q, idx) => (
+                  <div key={q.id || idx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-700">
+                        {idx + 1}. {q.label}
+                      </span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                        q.type === "number" ? "bg-blue-50 text-blue-600" :
+                        q.type === "checkbox" ? "bg-amber-50 text-amber-600" :
+                        q.type === "select" ? "bg-purple-50 text-purple-600" : "bg-slate-100 text-slate-500"
+                      }`}>
+                        {q.type === "number" ? "Número" : q.type === "checkbox" ? "Sí/No" : q.type === "select" ? "Opción Múltiple" : "Texto"}
+                      </span>
+                    </div>
+
+                    {q.type === "select" && q.options && (
+                      <div className="pl-4 border-l-2 border-purple-100 flex flex-wrap gap-1.5 mt-1">
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <span key={optIdx} className="bg-white border border-purple-100 text-[10px] px-2 py-0.5 rounded-md text-purple-700 font-medium">
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="text-[10px] text-slate-400 italic">
+                      {q.required ? "Campo Obligatorio" : "Campo Opcional"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t pt-3">
+            <Button
+              type="button"
+              className="bg-senses-primary text-white hover:bg-senses-primary/80"
+              onClick={() => setPreviewFormQuestions(null)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
