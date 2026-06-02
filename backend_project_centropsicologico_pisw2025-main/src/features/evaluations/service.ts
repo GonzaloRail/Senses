@@ -131,6 +131,16 @@ export const getEvaluationByIdService = async ({
           description: true,
           isActive: true,
           document: true,
+          formTemplate: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              fieldsSchema: true,
+              isActive: true,
+              isDefault: true,
+            },
+          },
         },
       },
     },
