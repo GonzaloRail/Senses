@@ -20,6 +20,31 @@ import { useAlert } from "@/shared/hooks/useAlert";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/store/auth/auth.store";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
+import { createFormTemplateApi } from "../api/formTemplatesApi";
+
+const mapFormQuestionsToFieldsSchema = (questionsJsonStr: string) => {
+  try {
+    const questions = JSON.parse(questionsJsonStr);
+    return questions.map((q: any, idx: number) => {
+      let type: "TEXT" | "TEXTAREA" | "NUMBER" | "DATE" | "SELECT" | "RADIO" | "CHECKBOX" | "SCALE" = "TEXTAREA";
+      if (q.type === "number") type = "NUMBER";
+      else if (q.type === "checkbox") type = "CHECKBOX";
+      else if (q.type === "select") type = "SELECT";
+
+      return {
+        label: q.label,
+        type: type,
+        required: q.required || false,
+        order: idx,
+        options: q.options || undefined,
+        placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
+      };
+    });
+  } catch (e) {
+    console.error("Error parsing templateContent", e);
+    return [];
+  }
+};
 
 export const EditEvaluation = () => {
   const { user } = useAuth();
@@ -162,7 +187,37 @@ export const EditEvaluation = () => {
         createTestsBatch(
           { testsToCreate: testsWithUrls },
           {
-            onSuccess: () => {
+            onSuccess: async (batchResponse) => {
+              const createdTests = (batchResponse as any).tests || [];
+              
+              await Promise.all(
+                createdTests.map(async (createdTest: any) => {
+                  const originalTest = newTests.find(
+                    (t) => t.name === createdTest.name
+                  );
+
+                  if (originalTest && (originalTest as any).templateContent) {
+                    const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
+                    if (fieldsSchema.length > 0) {
+                      try {
+                        await createFormTemplateApi({
+                          formTemplate: {
+                            name: createdTest.name,
+                            description: createdTest.description || "",
+                            isDefault: false,
+                            fieldsSchema,
+                            createdById: user?.id || "",
+                            testId: createdTest.id,
+                          }
+                        });
+                      } catch (err) {
+                        console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                      }
+                    }
+                  }
+                })
+              );
+
               console.log("Pruebas creadas exitosamente");
               showAlert(
                 `Evaluación actualizada con ${testsWithUrls.length} nueva(s) prueba(s)`,
