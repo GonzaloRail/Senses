@@ -5,6 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { getFormTemplateByTestIdApi } from "@/features/evaluations/api/formTemplatesApi";
 
 interface TestCardProps {
   patientTestId: string;
@@ -57,7 +59,31 @@ export const TestCard = ({
   formSubmission,
   onFillForm,
 }: TestCardProps) => {
-  const isForm = submissionMode === "FORM" || !!formTemplate;
+  const [detectedFormTemplate, setDetectedFormTemplate] = useState<any>(formTemplate || null);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
+  useEffect(() => {
+    // Si no tenemos formTemplate pero queremos comprobar si tiene uno
+    if (!formTemplate && templateTestId) {
+      setLoadingTemplate(true);
+      getFormTemplateByTestIdApi(templateTestId)
+        .then((template) => {
+          if (template) {
+            setDetectedFormTemplate(template);
+          }
+        })
+        .catch((err) => {
+          // Si da 404 u otro error, asumimos que no tiene formulario digital y es documento
+          console.log("No form template found for test:", templateTestId);
+        })
+        .finally(() => {
+          setLoadingTemplate(false);
+        });
+    }
+  }, [formTemplate, templateTestId]);
+
+  const activeFormTemplate = formTemplate || detectedFormTemplate;
+  const isForm = submissionMode === "FORM" || !!activeFormTemplate;
 
   return (
     <Card className="w-full my-2">
@@ -74,7 +100,7 @@ export const TestCard = ({
                 </span>
               ) : (
                 <span className="text-amber-600 font-semibold">
-                  ⚡ Formulario pendiente
+                  {loadingTemplate ? "Cargando..." : "⚡ Formulario pendiente"}
                 </span>
               )
             ) : uploadedFileName ? (
@@ -89,14 +115,15 @@ export const TestCard = ({
             <Button
               variant="outline"
               type="button"
+              disabled={loadingTemplate}
               onClick={() => {
-                if (onFillForm) {
+                if (onFillForm && activeFormTemplate) {
                   onFillForm({
                     patientTestId,
                     templateTestId,
-                    formTemplateId: formTemplate?.id || "",
-                    formTemplateName: formTemplate?.name || name,
-                    fieldsSchema: formTemplate?.fieldsSchema || [],
+                    formTemplateId: activeFormTemplate.id,
+                    formTemplateName: activeFormTemplate.name,
+                    fieldsSchema: activeFormTemplate.fieldsSchema,
                     existingSubmission: formSubmission,
                   });
                 }
