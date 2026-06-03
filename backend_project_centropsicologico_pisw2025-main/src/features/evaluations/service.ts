@@ -365,13 +365,27 @@ export const getAllEvaluationsByClinicalHistoryIdSortedBySectionService =
             id: true,
             name: true,
             document: true,
+            formTemplate: {
+              select: {
+                id: true,
+                name: true,
+                fieldsSchema: true,
+              },
+            },
             patientTests: {
               where: {
                 clinicalHistoryId: id,
               },
               select: {
                 id: true,
+                submissionMode: true,
                 document: true,
+                formSubmission: {
+                  select: {
+                    id: true,
+                    responseData: true,
+                  },
+                },
               },
             },
           },
