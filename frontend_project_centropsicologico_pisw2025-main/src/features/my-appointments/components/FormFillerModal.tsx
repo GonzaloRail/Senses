@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -168,6 +169,9 @@ export const FormFillerModal = ({
           <DialogTitle className="text-xl font-bold text-senses-primary">
             {formTemplateName} {isReadOnly && <span className="text-xs font-normal text-muted-foreground ml-2">(Solo lectura)</span>}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Responda las preguntas de la prueba en formato digital.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
@@ -181,6 +185,21 @@ export const FormFillerModal = ({
                 sortedFields.map((field, index) => {
                   const fieldKey = field.id || `field_${index}`;
                   const hasError = !!errors[fieldKey];
+
+                  // Analizar opciones con seguridad
+                  const rawOptions = field.options;
+                  let optionsList: string[] = [];
+                  if (rawOptions) {
+                    if (Array.isArray(rawOptions)) {
+                      optionsList = rawOptions;
+                    } else if (typeof rawOptions === "string") {
+                      try {
+                        optionsList = JSON.parse(rawOptions);
+                      } catch (e) {
+                        optionsList = [rawOptions];
+                      }
+                    }
+                  }
 
                   return (
                     <div key={fieldKey} className="flex flex-col gap-2">
@@ -257,7 +276,7 @@ export const FormFillerModal = ({
                           }`}
                         >
                           <option value="">{field.placeholder || "Seleccione una opción..."}</option>
-                          {field.options?.map((opt) => (
+                          {optionsList.map((opt) => (
                             <option key={opt} value={opt}>
                               {opt}
                             </option>
@@ -268,7 +287,7 @@ export const FormFillerModal = ({
                       {/* RADIO */}
                       {field.type === "RADIO" && (
                         <div className="flex flex-col gap-2 mt-1">
-                          {field.options?.map((opt) => (
+                          {optionsList.map((opt) => (
                             <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
                               <input
                                 type="radio"
@@ -288,7 +307,7 @@ export const FormFillerModal = ({
                       {/* CHECKBOX */}
                       {field.type === "CHECKBOX" && (
                         <div className="flex flex-col gap-2 mt-1">
-                          {field.options?.map((opt) => {
+                          {optionsList.map((opt) => {
                             const isChecked = Array.isArray(answers[fieldKey]) && answers[fieldKey].includes(opt);
                             return (
                               <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
