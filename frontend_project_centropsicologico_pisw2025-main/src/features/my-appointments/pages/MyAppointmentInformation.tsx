@@ -127,12 +127,13 @@ export const MyAppointmentInformation = () => {
   };
 
   const handleAddTest = (evaluationId: string, newTest: AppointmentTest) => {
-    evaluations.forEach((evaluation) => {
-      if (evaluation.id === evaluationId) {
-        evaluation.tests.push(newTest);
-      }
-    });
-    setEvaluations([...evaluations]);
+    setEvaluations((prev) =>
+      prev.map((evaluation) =>
+        evaluation.id === evaluationId
+          ? { ...evaluation, tests: [...evaluation.tests, newTest] }
+          : evaluation
+      )
+    );
   };
 
   const handleCreatePatientTest = async ({

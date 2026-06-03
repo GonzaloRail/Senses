@@ -39,7 +39,7 @@ export interface CreateTestPayload {
 export interface TestOption {
   id: string;
   name: string;
-  document: {
+  document?: {
     fileUrl: string;
-  };
+  } | null;
 }
