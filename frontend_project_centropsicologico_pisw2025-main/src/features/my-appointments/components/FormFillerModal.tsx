@@ -10,7 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useState, useEffect, useMemo } from "react";
 import type { FormFieldPayload } from "@/features/evaluations/api/formTemplatesApi";
 
@@ -175,7 +175,7 @@ export const FormFillerModal = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <ScrollArea className="flex-1 pr-4 max-h-[60vh] overflow-y-auto">
+          <div className="flex-1 pr-4 max-h-[60vh] overflow-y-auto">
             <div className="flex flex-col gap-6 py-2">
               {sortedFields.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
@@ -368,7 +368,7 @@ export const FormFillerModal = ({
                 })
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="mt-4 pt-4 border-t flex justify-end gap-2">
             <Button
