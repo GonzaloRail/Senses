@@ -63,7 +63,8 @@ export const createPatientTestApi = async (payload: {
   completedById: string;
   isGeneralDoc: boolean;
   appointmentId?: string;
-  documentId: string;
+  documentId?: string;
+  submissionMode?: "DOCUMENT" | "FORM";
 }) => {
   const response = await api.post(`/api/v1/patientTests`, payload);
   return response.data;

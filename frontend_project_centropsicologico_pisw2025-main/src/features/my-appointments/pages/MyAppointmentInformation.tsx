@@ -319,7 +319,6 @@ export const MyAppointmentInformation = () => {
           completedById: user?.id || "",
           isGeneralDoc: false,
           appointmentId: id || "",
-          documentId: "",
           submissionMode: "FORM" as any,
         });
 

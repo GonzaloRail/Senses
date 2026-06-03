@@ -178,8 +178,8 @@ export const FormFillerModal = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "min(680px, calc(100vw - 2rem))",
-          maxHeight: "85vh",
+          width: "min(860px, calc(100vw - 2rem))",
+          maxHeight: "96vh",
           backgroundColor: "white",
           borderRadius: "0.5rem",
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
@@ -240,8 +240,9 @@ export const FormFillerModal = ({
           <div
             style={{
               flex: 1,
-              overflowY: "auto",
+              overflowY: "scroll",
               padding: "1rem 1.5rem",
+              minHeight: 0,
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -373,24 +374,59 @@ export const FormFillerModal = ({
                         </div>
                       )}
 
-                      {/* CHECKBOX */}
+                      {/* CHECKBOX - con opciones: lista de checkboxes; sin opciones: botones Sí/No */}
                       {field.type === "CHECKBOX" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
-                          {optionsList.map((opt) => {
-                            const isChecked = Array.isArray(answers[fieldKey]) && answers[fieldKey].includes(opt);
-                            return (
-                              <label key={opt} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  disabled={isReadOnly}
-                                  onChange={(e) => handleCheckboxChange(fieldKey, opt, e.target.checked)}
-                                  style={{ width: "1rem", height: "1rem" }}
-                                />
-                                <span>{opt}</span>
-                              </label>
-                            );
-                          })}
+                          {optionsList.length === 0 ? (
+                            /* Sí/No toggle cuando no hay opciones definidas */
+                            <div style={{ display: "flex", gap: "0.75rem" }}>
+                              {(["Sí", "No"] as const).map((opcion) => {
+                                const selected = answers[fieldKey] === opcion;
+                                return (
+                                  <button
+                                    key={opcion}
+                                    type="button"
+                                    disabled={isReadOnly}
+                                    onClick={() => handleChange(fieldKey, selected ? "" : opcion)}
+                                    style={{
+                                      padding: "0.375rem 1.5rem",
+                                      borderRadius: "0.375rem",
+                                      fontWeight: 600,
+                                      fontSize: "0.875rem",
+                                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                                      border: selected ? "none" : "1px solid #d1d5db",
+                                      background: selected
+                                        ? opcion === "Sí"
+                                          ? "#16a34a"
+                                          : "#dc2626"
+                                        : "white",
+                                      color: selected ? "white" : "#374151",
+                                      transition: "all 0.15s",
+                                    }}
+                                  >
+                                    {opcion}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            /* Lista de checkboxes normal cuando hay opciones */
+                            optionsList.map((opt) => {
+                              const isChecked = Array.isArray(answers[fieldKey]) && answers[fieldKey].includes(opt);
+                              return (
+                                <label key={opt} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={isReadOnly}
+                                    onChange={(e) => handleCheckboxChange(fieldKey, opt, e.target.checked)}
+                                    style={{ width: "1rem", height: "1rem" }}
+                                  />
+                                  <span>{opt}</span>
+                                </label>
+                              );
+                            })
+                          )}
                         </div>
                       )}
 
