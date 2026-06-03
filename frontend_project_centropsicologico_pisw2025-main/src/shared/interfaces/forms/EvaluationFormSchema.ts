@@ -17,6 +17,7 @@ export const evaluationFormSchema = z.object({
       fileurl: z.string().optional(),
       testFile: z.instanceof(File).optional(),
       isNew: z.boolean().optional(),
+      templateContent: z.string().optional(),
     })
   ),
 });
