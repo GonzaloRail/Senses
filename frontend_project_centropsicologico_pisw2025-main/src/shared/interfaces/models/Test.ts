@@ -20,6 +20,11 @@ export interface Test {
 
   createdAt: Date;
   updatedAt: Date;
+  formTemplate?: {
+    id: string;
+    name: string;
+    fieldsSchema: any[];
+  } | null;
 }
 
 export interface CreateTestPayload {
