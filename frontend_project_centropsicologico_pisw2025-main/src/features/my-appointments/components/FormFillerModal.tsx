@@ -1,17 +1,9 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { FormFieldPayload } from "@/features/evaluations/api/formTemplatesApi";
 
 interface FormFillerModalProps {
@@ -63,10 +55,10 @@ export const FormFillerModal = ({
         return {};
       }
     }
-    return existingResponseData;
+    return existingResponseData as Record<string, any>;
   }, [existingResponseData]);
 
-  // Inicializar respuestas
+  // Inicializar respuestas cuando se abre
   useEffect(() => {
     if (isOpen && parsedFieldsSchema.length > 0) {
       const initialAnswers: Record<string, any> = {};
@@ -75,7 +67,6 @@ export const FormFillerModal = ({
         if (parsedExistingResponseData && parsedExistingResponseData[fieldKey] !== undefined) {
           initialAnswers[fieldKey] = parsedExistingResponseData[fieldKey];
         } else {
-          // Valores por defecto
           if (field.type === "CHECKBOX") {
             initialAnswers[fieldKey] = [];
           } else {
@@ -87,35 +78,39 @@ export const FormFillerModal = ({
       setErrors({});
       setSaving(false);
     }
-  }, [isOpen, parsedFieldsSchema, parsedExistingResponseData]);
+  }, [isOpen]); // solo reacciona al abrir/cerrar, no a dependencias que cambian
 
-  const handleChange = (fieldKey: string, value: any) => {
-    if (isReadOnly) return;
-    setAnswers((prev) => ({
-      ...prev,
-      [fieldKey]: value,
-    }));
-    // Limpiar error al modificar
-    if (errors[fieldKey]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[fieldKey];
-        return next;
-      });
-    }
-  };
+  // Cerrar con Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, handleClose]);
 
-  const handleCheckboxChange = (fieldKey: string, option: string, checked: boolean) => {
+  const handleChange = useCallback((fieldKey: string, value: any) => {
     if (isReadOnly) return;
-    const currentValues = Array.isArray(answers[fieldKey]) ? answers[fieldKey] : [];
-    let newValues: string[];
-    if (checked) {
-      newValues = [...currentValues, option];
-    } else {
-      newValues = currentValues.filter((v: string) => v !== option);
-    }
-    handleChange(fieldKey, newValues);
-  };
+    setAnswers((prev) => ({ ...prev, [fieldKey]: value }));
+    setErrors((prev) => {
+      if (!prev[fieldKey]) return prev;
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
+  }, [isReadOnly]);
+
+  const handleCheckboxChange = useCallback((fieldKey: string, option: string, checked: boolean) => {
+    if (isReadOnly) return;
+    setAnswers((prev) => {
+      const currentValues = Array.isArray(prev[fieldKey]) ? prev[fieldKey] : [];
+      const newValues = checked
+        ? [...currentValues, option]
+        : currentValues.filter((v: string) => v !== option);
+      return { ...prev, [fieldKey]: newValues };
+    });
+  }, [isReadOnly]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -145,7 +140,6 @@ export const FormFillerModal = ({
       return;
     }
     if (!validate()) return;
-
     setSaving(true);
     try {
       await onSave(answers);
@@ -162,23 +156,97 @@ export const FormFillerModal = ({
     return [...parsedFieldsSchema].sort((a, b) => a.order - b.order);
   }, [parsedFieldsSchema]);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col gap-4">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-senses-primary">
-            {formTemplateName} {isReadOnly && <span className="text-xs font-normal text-muted-foreground ml-2">(Solo lectura)</span>}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Responda las preguntas de la prueba en formato digital.
-          </DialogDescription>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 pr-4 max-h-[60vh] overflow-y-auto">
-            <div className="flex flex-col gap-6 py-2">
+  const modalContent = (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9999 }}
+      aria-modal="true"
+      role="dialog"
+      aria-label={formTemplateName}
+    >
+      {/* Overlay */}
+      <div
+        style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)" }}
+        onClick={handleClose}
+      />
+
+      {/* Panel */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(680px, calc(100vw - 2rem))",
+          maxHeight: "85vh",
+          backgroundColor: "white",
+          borderRadius: "0.5rem",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "1.25rem 1.5rem",
+            borderBottom: "1px solid #e5e7eb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.125rem",
+              fontWeight: 700,
+              margin: 0,
+              color: "var(--senses-primary, #4f46e5)",
+            }}
+          >
+            {formTemplateName}
+            {isReadOnly && (
+              <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "#6b7280", marginLeft: "0.5rem" }}>
+                (Solo lectura)
+              </span>
+            )}
+          </h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.25rem",
+              fontSize: "1.25rem",
+              color: "#6b7280",
+              lineHeight: 1,
+            }}
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Cuerpo con scroll */}
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+        >
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "1rem 1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {sortedFields.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
+                <p style={{ textAlign: "center", color: "#6b7280", padding: "2rem 0" }}>
                   Este formulario no contiene preguntas definidas.
                 </p>
               ) : (
@@ -186,7 +254,6 @@ export const FormFillerModal = ({
                   const fieldKey = field.id || `field_${index}`;
                   const hasError = !!errors[fieldKey];
 
-                  // Analizar opciones con seguridad
                   const rawOptions = field.options;
                   let optionsList: string[] = [];
                   if (rawOptions) {
@@ -195,21 +262,21 @@ export const FormFillerModal = ({
                     } else if (typeof rawOptions === "string") {
                       try {
                         optionsList = JSON.parse(rawOptions);
-                      } catch (e) {
+                      } catch {
                         optionsList = [rawOptions];
                       }
                     }
                   }
 
                   return (
-                    <div key={fieldKey} className="flex flex-col gap-2">
+                    <div key={fieldKey} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <Label htmlFor={fieldKey} className="font-semibold text-sm flex items-center gap-1">
                         {field.label}
-                        {field.required && !isReadOnly && <span className="text-red-500">*</span>}
+                        {field.required && !isReadOnly && <span style={{ color: "#ef4444" }}>*</span>}
                       </Label>
 
                       {field.helpText && (
-                        <span className="text-xs text-muted-foreground -mt-1">
+                        <span style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "-0.25rem" }}>
                           {field.helpText}
                         </span>
                       )}
@@ -247,7 +314,9 @@ export const FormFillerModal = ({
                           placeholder={field.placeholder || ""}
                           value={answers[fieldKey] !== undefined ? answers[fieldKey] : ""}
                           disabled={isReadOnly}
-                          onChange={(e) => handleChange(fieldKey, e.target.value === "" ? "" : Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(fieldKey, e.target.value === "" ? "" : Number(e.target.value))
+                          }
                           className={hasError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
                       )}
@@ -286,9 +355,9 @@ export const FormFillerModal = ({
 
                       {/* RADIO */}
                       {field.type === "RADIO" && (
-                        <div className="flex flex-col gap-2 mt-1">
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
                           {optionsList.map((opt) => (
-                            <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <label key={opt} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
                               <input
                                 type="radio"
                                 name={fieldKey}
@@ -296,7 +365,7 @@ export const FormFillerModal = ({
                                 checked={answers[fieldKey] === opt}
                                 disabled={isReadOnly}
                                 onChange={() => handleChange(fieldKey, opt)}
-                                className="w-4 h-4 text-senses-primary focus:ring-senses-primary border-gray-300"
+                                style={{ width: "1rem", height: "1rem" }}
                               />
                               <span>{opt}</span>
                             </label>
@@ -306,17 +375,17 @@ export const FormFillerModal = ({
 
                       {/* CHECKBOX */}
                       {field.type === "CHECKBOX" && (
-                        <div className="flex flex-col gap-2 mt-1">
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
                           {optionsList.map((opt) => {
                             const isChecked = Array.isArray(answers[fieldKey]) && answers[fieldKey].includes(opt);
                             return (
-                              <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <label key={opt} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.875rem", cursor: "pointer" }}>
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
                                   disabled={isReadOnly}
                                   onChange={(e) => handleCheckboxChange(fieldKey, opt, e.target.checked)}
-                                  className="w-4 h-4 text-senses-primary focus:ring-senses-primary border-gray-300 rounded-sm"
+                                  style={{ width: "1rem", height: "1rem" }}
                                 />
                                 <span>{opt}</span>
                               </label>
@@ -327,8 +396,20 @@ export const FormFillerModal = ({
 
                       {/* SCALE */}
                       {field.type === "SCALE" && (
-                        <div className="flex flex-col gap-2 mt-1">
-                          <div className="flex items-center justify-between gap-1 max-w-md bg-gray-50 p-3 rounded-lg border">
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "0.25rem",
+                              maxWidth: "28rem",
+                              background: "#f9fafb",
+                              padding: "0.75rem",
+                              borderRadius: "0.5rem",
+                              border: "1px solid #e5e7eb",
+                            }}
+                          >
                             {Array.from(
                               { length: (field.scaleMax || 5) - (field.scaleMin || 1) + 1 },
                               (_, i) => (field.scaleMin || 1) + i
@@ -340,18 +421,38 @@ export const FormFillerModal = ({
                                   type="button"
                                   disabled={isReadOnly}
                                   onClick={() => handleChange(fieldKey, val)}
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                                    isSelected
-                                      ? "bg-senses-primary text-white shadow-md transform scale-110"
-                                      : "bg-white text-gray-700 border hover:bg-gray-100 disabled:hover:bg-white"
-                                  }`}
+                                  style={{
+                                    width: "2.5rem",
+                                    height: "2.5rem",
+                                    borderRadius: "50%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontWeight: 700,
+                                    fontSize: "0.875rem",
+                                    cursor: isReadOnly ? "not-allowed" : "pointer",
+                                    border: isSelected ? "none" : "1px solid #d1d5db",
+                                    background: isSelected ? "var(--senses-primary, #4f46e5)" : "white",
+                                    color: isSelected ? "white" : "#374151",
+                                    transition: "all 0.15s",
+                                    transform: isSelected ? "scale(1.1)" : "none",
+                                  }}
                                 >
                                   {val}
                                 </button>
                               );
                             })}
                           </div>
-                          <div className="flex justify-between max-w-md px-1 text-xs text-muted-foreground">
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              maxWidth: "28rem",
+                              padding: "0 0.25rem",
+                              fontSize: "0.75rem",
+                              color: "#6b7280",
+                            }}
+                          >
                             <span>Mínimo: {field.scaleMin || 1}</span>
                             <span>Máximo: {field.scaleMax || 5}</span>
                           </div>
@@ -359,7 +460,7 @@ export const FormFillerModal = ({
                       )}
 
                       {hasError && (
-                        <span className="text-xs text-red-500 font-medium">
+                        <span style={{ fontSize: "0.75rem", color: "#ef4444", fontWeight: 500 }}>
                           {errors[fieldKey]}
                         </span>
                       )}
@@ -370,7 +471,17 @@ export const FormFillerModal = ({
             </div>
           </div>
 
-          <DialogFooter className="mt-4 pt-4 border-t flex justify-end gap-2">
+          {/* Footer */}
+          <div
+            style={{
+              padding: "1rem 1.5rem",
+              borderTop: "1px solid #e5e7eb",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "0.5rem",
+              flexShrink: 0,
+            }}
+          >
             <Button
               variant="outline"
               type="button"
@@ -388,9 +499,11 @@ export const FormFillerModal = ({
                 {saving ? "Guardando..." : "Guardar Respuestas"}
               </Button>
             )}
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
