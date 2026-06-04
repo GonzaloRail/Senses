@@ -112,6 +112,9 @@ export type GetUsersByNameInput = z.infer<typeof getUsersByNameSchema>["query"];
 export const getPsychologistByNameSchema = z.object({
   query: z.object({
     searchQuery: z.string().optional(),
+    dni: z.string().optional(),
+    firstname: z.string().optional(),
+    lastname: z.string().optional(),
   }),
 });
 

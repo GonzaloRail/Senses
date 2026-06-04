@@ -99,8 +99,12 @@ export const CreateAppointment = () => {
       return;
     }
 
+        //rango Roto - correccion
     const extractTime = (isoTime: string): string => {
-      return isoTime.split("T")[1].substring(0, 5); // Extrae "HH:MM"
+      const date = new Date(isoTime);
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
     };
 
     const scheduleStart = extractTime(schedule.startTime);
@@ -197,8 +201,10 @@ export const CreateAppointment = () => {
         onCancel={handleCancel}
         loading={loading || createAppointmentMutation.isPending}
         // Search handlers
-        onPatientSearch={patientSearch.setNameQuery}
-        onPsychologistSearch={psychologistSearch.setSearchQuery}
+        onPatientDniSearch={patientSearch.setDniQuery}
+        onPatientNameSearch={(fn, ln) => { patientSearch.setFirstnameQuery(fn); patientSearch.setLastnameQuery(ln); }}
+        onPsychologistDniSearch={psychologistSearch.setDniQuery}
+        onPsychologistNameSearch={(fn, ln) => { psychologistSearch.setFirstnameQuery(fn); psychologistSearch.setLastnameQuery(ln); }}
         onOfficeSearch={officeSearch.setSearch}
         // Date/Time handlers for psychologist search
         //onPsychologistDateChange={handleDateChange}

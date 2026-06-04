@@ -3,6 +3,7 @@ import {
   getAllUsersPaginatedApi,
   getUserByIdApi,
   searchPsychologistByName,
+  searchPsychologistByParams,
   searchPsychologistsAvailable,
   searchUsersByQuery,
   type UserByIdQuery,
@@ -107,15 +108,26 @@ export const usePsychologistSearchQuery = () => {
 
 export const usePsychologistSearchByNameQuery = () => {
   const [searchName, setSearchQuery] = useState<string>("");
+  const [searchDni, setDniQuery] = useState<string>("");
+  const [searchFirstname, setFirstnameQuery] = useState<string>("");
+  const [searchLastname, setLastnameQuery] = useState<string>("");
+
+  const useParams = searchDni.trim().length > 0 || searchFirstname.trim().length > 0 || searchLastname.trim().length > 0;
 
   const {
     data: psychologists = [],
     isLoading,
     error,
   } = useQuery<UserMinimal[]>({
-    queryKey: ["psychologists", "search", searchName],
-    queryFn: () => searchPsychologistByName(searchName),
-    //enabled: searchName.trim().length > 0,
+    queryKey: ["psychologists", "search", searchName, searchDni, searchFirstname, searchLastname],
+    queryFn: () =>
+      useParams
+        ? searchPsychologistByParams({
+            dni: searchDni || undefined,
+            firstname: searchFirstname || undefined,
+            lastname: searchLastname || undefined,
+          })
+        : searchPsychologistByName(searchName),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -124,6 +136,9 @@ export const usePsychologistSearchByNameQuery = () => {
     isLoading,
     error,
     setSearchQuery,
+    setDniQuery,
+    setFirstnameQuery,
+    setLastnameQuery,
   };
 }
 
