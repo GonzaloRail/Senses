@@ -20,4 +20,9 @@ export interface PatientTest {
   completedBy: User;
 
   completedAt: Date;
+  submissionMode?: "DOCUMENT" | "FORM";
+  formSubmission?: {
+    id: string;
+    responseData: any;
+  } | null;
 }

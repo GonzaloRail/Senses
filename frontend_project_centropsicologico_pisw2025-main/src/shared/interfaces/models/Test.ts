@@ -20,6 +20,11 @@ export interface Test {
 
   createdAt: Date;
   updatedAt: Date;
+  formTemplate?: {
+    id: string;
+    name: string;
+    fieldsSchema: any[];
+  } | null;
 }
 
 export interface CreateTestPayload {
@@ -34,7 +39,7 @@ export interface CreateTestPayload {
 export interface TestOption {
   id: string;
   name: string;
-  document: {
+  document?: {
     fileUrl: string;
-  };
+  } | null;
 }

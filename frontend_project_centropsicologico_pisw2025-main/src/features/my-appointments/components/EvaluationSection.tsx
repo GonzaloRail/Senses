@@ -6,18 +6,12 @@ import {
 } from "@/components/ui/card";
 import { TestCard } from "./TestCard";
 import { Button } from "@/components/ui/button";
+import type { AppointmentTest } from "@/shared/interfaces/models";
 
 interface EvaluationSectionProps {
   id: string;
   name: string;
-  tests: Array<{
-    id: string;
-    testId: string;
-    name: string;
-    templateUrl: string;
-    uploadedFileName?: string;
-    uploadedFile?: File;
-  }>;
+  tests: AppointmentTest[];
   openAddTestModal: () => void;
   onOverrideFile: () => Promise<boolean>;
   setSelectedEvaluationId: (evaluationId: string) => void;
@@ -30,6 +24,14 @@ interface EvaluationSectionProps {
     templateTestId: string;
     file: File;
   }) => Promise<void>;
+  onFillForm?: (params: {
+    patientTestId: string;
+    templateTestId: string;
+    formTemplateId: string;
+    formTemplateName: string;
+    fieldsSchema: any[];
+    existingSubmission: any;
+  }) => void;
 }
 
 export const EvaluationSection = ({
@@ -40,6 +42,7 @@ export const EvaluationSection = ({
   onOverrideFile,
   setSelectedEvaluationId,
   handleCreatePatientTest,
+  onFillForm,
 }: EvaluationSectionProps) => {
   return (
     <Card className="w-full">
@@ -59,10 +62,10 @@ export const EvaluationSection = ({
             Añadir prueba
           </Button>
         </CardTitle>
-        <CardDescription>
+        <div className="flex flex-col gap-2 w-full mt-2">
           {tests.map((test) => (
             <TestCard
-              key={test.id}
+              key={test.id || test.testId}
               patientTestId={test.id}
               templateTestId={test.testId}
               name={test.name}
@@ -71,9 +74,13 @@ export const EvaluationSection = ({
               uploadedFile={test.uploadedFile}
               onOverrideFile={onOverrideFile}
               handleCreatePatientTest={handleCreatePatientTest}
+              submissionMode={test.submissionMode}
+              formTemplate={test.formTemplate}
+              formSubmission={test.formSubmission}
+              onFillForm={onFillForm}
             />
           ))}
-        </CardDescription>
+        </div>
       </CardHeader>
     </Card>
   );

@@ -5,7 +5,10 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { createPatientTestDocumentApi } from "@/features/my-appointments/api/myAppointmentsApi";
+import {
+  createPatientTestDocumentApi,
+  createPatientTestApi,
+} from "@/features/my-appointments/api/myAppointmentsApi";
 import {
   useCreatePatientTest,
   useUpdatePatientTest,
@@ -20,8 +23,12 @@ import type {
 } from "@/shared/interfaces/models";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
 import { useAuth } from "@/store/auth/auth.store";
-import { Download, FileText, Upload, Pencil } from "lucide-react";
-import { useRef } from "react";
+import { Download, FileText, Upload, Pencil, ClipboardList } from "lucide-react";
+import { useRef, useState } from "react";
+import { queryClient } from "@/lib/queryClient";
+import { getFormTemplateByTestIdApi } from "@/features/evaluations/api/formTemplatesApi";
+import { createFormSubmissionApi, updateFormSubmissionApi } from "@/features/evaluations/api/formSubmissionsApi";
+import { FormFillerModal } from "../../my-appointments/components/FormFillerModal";
 
 // Components
 const TestActions = ({
@@ -45,6 +52,15 @@ const TestActions = ({
   const { mutate: updatePatientTest } = useUpdatePatientTest();
 
   const { showAlert } = useAlert();
+
+  // Dynamic form state
+  const [isFormFillerOpen, setIsFormFillerOpen] = useState(false);
+  const [formTemplateData, setFormTemplateData] = useState<{
+    id: string;
+    name: string;
+    fieldsSchema: any[];
+  } | null>(null);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(true);
 
   const handleUploadPatientTest = () => {
     fileInputRef.current?.click(); // Abre el selector de archivos
@@ -147,69 +163,207 @@ const TestActions = ({
     setIsDataLoading(false);
   };
 
+  const isForm = test.patientTests[0]?.submissionMode === "FORM" || !!test.formTemplate;
+
+  const handleOpenForm = async (readOnly: boolean) => {
+    setIsReadOnlyMode(readOnly);
+    let template = test.formTemplate;
+
+    if (!template) {
+      setIsDataLoading(true);
+      try {
+        const fetchedTemplate = await getFormTemplateByTestIdApi(test.id);
+        if (fetchedTemplate) {
+          template = fetchedTemplate;
+        }
+      } catch (err) {
+        console.error("Error al obtener la plantilla del formulario:", err);
+        showAlert("Esta prueba no tiene un formulario digital configurado.", "error");
+        setIsDataLoading(false);
+        return;
+      }
+      setIsDataLoading(false);
+    }
+
+    if (template) {
+      setFormTemplateData(template);
+      setIsFormFillerOpen(true);
+    }
+  };
+
+  const handleSaveFormAnswers = async (answers: Record<string, any>) => {
+    if (!formTemplateData) return;
+    setIsDataLoading(true);
+
+    try {
+      let patientTestId = test.patientTests[0]?.id;
+
+      if (!patientTestId) {
+        const newPatientTest = await createPatientTestApi({
+          testId: test.id,
+          clinicalHistoryId: clinicalHistory.id,
+          completedById: user?.id || "",
+          isGeneralDoc: false,
+          submissionMode: "FORM" as any,
+          documentId: "",
+        });
+
+        if (!newPatientTest) {
+          showAlert("Error al iniciar el registro de la prueba.", "error");
+          setIsDataLoading(false);
+          return;
+        }
+        patientTestId = newPatientTest.id;
+      }
+
+      if (test.patientTests[0]?.formSubmission) {
+        await updateFormSubmissionApi(
+          test.patientTests[0].formSubmission.id,
+          {
+            responseData: answers,
+            patientTestId,
+          }
+        );
+        showAlert("Respuestas del formulario actualizadas correctamente", "success");
+      } else {
+        await createFormSubmissionApi({
+          formTemplateId: formTemplateData.id,
+          responseData: answers,
+          completedById: user?.id || "",
+          patientTestId,
+        });
+        showAlert("Formulario guardado correctamente", "success");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["clinical-history-sorted"] });
+      queryClient.invalidateQueries({ queryKey: ["clinical-history"] });
+    } catch (err) {
+      console.error("Error al guardar respuestas:", err);
+      showAlert("Error al guardar el formulario.", "error");
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
   return (
     <div className="flex gap-2 ml-auto">
-      {hasPatientTest && (
+      {isForm ? (
         <>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              window.open(test.patientTests[0].document?.fileUrl, "_blank")
-            }
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Descargar
-          </Button>
-          <input
-            type="file"
-            ref={fileInputUpdatedRef}
-            onChange={handleUpdatePatientTest}
-            className="hidden"
-          />
-          {roleSelected === "PSYCHOLOGIST" && (
+          {hasPatientTest && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleOpenForm(true)}
+              >
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Ver Respuestas
+              </Button>
+              {roleSelected === "PSYCHOLOGIST" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleOpenForm(false)}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Actualizar
+                </Button>
+              )}
+            </>
+          )}
+
+          {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
+            <Button
+              size="sm"
+              variant="default"
+              className="bg-senses-primary text-white hover:bg-senses-primary/90"
+              onClick={() => handleOpenForm(false)}
+            >
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Llenar Formulario
+            </Button>
+          )}
+        </>
+      ) : (
+        <>
+          {hasPatientTest && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  window.open(test.patientTests[0].document?.fileUrl, "_blank")
+                }
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Descargar
+              </Button>
+              <input
+                type="file"
+                ref={fileInputUpdatedRef}
+                onChange={handleUpdatePatientTest}
+                className="hidden"
+              />
+              {roleSelected === "PSYCHOLOGIST" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUploadUpdatedPatientTest}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Actualizar
+                </Button>
+              )}
+            </>
+          )}
+
+          {hasTemplate && (
             <Button
               size="sm"
               variant="outline"
-              onClick={handleUploadUpdatedPatientTest}
+              onClick={() => {
+                window.open(test.document?.fileUrl, "_blank");
+              }}
             >
-              <Pencil className="w-4 h-4 mr-2" />
-              Actualizar
+              <FileText className="w-4 h-4 mr-2" />
+              Descargar Plantilla
             </Button>
+          )}
+
+          {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => handleUploadPatientTest()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Subir Archivo
+              </Button>
+            </>
           )}
         </>
       )}
 
-      {hasTemplate && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            window.open(test.document?.fileUrl, "_blank");
+      {isFormFillerOpen && formTemplateData && (
+        <FormFillerModal
+          isOpen={isFormFillerOpen}
+          handleClose={() => {
+            setIsFormFillerOpen(false);
+            setFormTemplateData(null);
           }}
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Descargar Plantilla
-        </Button>
-      )}
-
-      {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
-        <>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => handleUploadPatientTest()}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Subir Archivo
-          </Button>
-        </>
+          formTemplateName={formTemplateData.name}
+          fieldsSchema={formTemplateData.fieldsSchema}
+          existingResponseData={test.patientTests[0]?.formSubmission?.responseData}
+          isReadOnly={isReadOnlyMode}
+          onSave={handleSaveFormAnswers}
+        />
       )}
     </div>
   );
@@ -252,7 +406,9 @@ const CustomSectionContent = ({
                 <p className="font-medium">{test.name}</p>
                 {hasPatientTest && (
                   <p className="text-xs text-muted-foreground">
-                    {test.patientTests[0].document?.name}
+                    {test.patientTests[0].submissionMode === "FORM"
+                      ? "Respuestas registradas (Formulario digital)"
+                      : test.patientTests[0].document?.name}
                   </p>
                 )}
               </div>
