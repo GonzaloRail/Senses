@@ -191,7 +191,7 @@ export const PatientsList = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DNI">DNI</SelectItem>
+                      <SelectItem value="DNI">DNI/Historia clinica</SelectItem>
                       <SelectItem value="NAME_SURNAME">Nombre y Apellido</SelectItem>
                     </SelectContent>
                   </Select>
@@ -206,7 +206,7 @@ export const PatientsList = () => {
                           handleSearch();
                         }
                       }}
-                      placeholder="Buscar por DNI..."
+                      placeholder="Buscar por DNI/Historia clínica"
                       maxLength={8}
                       className="w-full"
                     />

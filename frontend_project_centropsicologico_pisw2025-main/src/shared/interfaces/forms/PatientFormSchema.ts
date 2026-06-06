@@ -36,6 +36,38 @@ export const patientFormSchema = z.object({
   districtId: z.string().min(1, "El distrito es obligatorio"),
   provinceId: z.string().min(1, "La provincia es obligatoria"),
   regionId: z.string().min(1, "El departamento es obligatorio"),
+
+  // Información complementaria del paciente
+  livesWith: z.string().optional(),
+  numChildren: z.string().optional(),
+  guardianName: z.string().optional(),
+  guardianPhone: z.string().optional(),
+
+  mainReason: z.string().optional(),
+  howLong: z.string().optional(),
+  previousTherapy: z.string().optional(),
+  psychiatricMedication: z.string().optional(),
+  urgencyLevel: z.string().optional(),
+
+  preferredModality: z.string().optional(),
+  preferredSchedule: z.string().optional(),
+  requiredSpecialty: z.string().optional(),
+  preferredContact: z.string().optional(),
+
+  howFoundUs: z.string().optional(),
+  whoReferred: z.string().optional(),
+  whatAttractedAttention: z.string().optional(),
+  comparedOtherCenters: z.string().optional(),
+  acceptPromotions: z.string().optional(),
+
+  employmentStatus: z.string().optional(),
+  workSector: z.string().optional(),
+  workMode: z.string().optional(),
+  incomeRange: z.string().optional(),
+  paymentMethods: z.string().optional(),
+
+  acceptDataPolicy: z.boolean().optional(),
+  acceptCommunications: z.boolean().optional(),
 })
   .superRefine((data, ctx) => {
     if (data.parentDni && data.dni === data.parentDni) {
