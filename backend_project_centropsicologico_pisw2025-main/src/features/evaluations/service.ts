@@ -376,9 +376,26 @@ export const getAllEvaluationsByClinicalHistoryIdSortedBySectionService =
               where: {
                 clinicalHistoryId: id,
               },
+              orderBy: {
+                completedAt: "desc",
+              },
               select: {
                 id: true,
                 submissionMode: true,
+                completedAt: true,
+                completedBy: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                appointment: {
+                  select: {
+                    id: true,
+                    date: true,
+                  },
+                },
                 document: true,
                 formSubmission: {
                   select: {
