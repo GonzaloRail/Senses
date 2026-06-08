@@ -33,6 +33,12 @@ export const formFieldSchema = z.object({
   scaleMax: z.number().int().optional(),
   /** Texto de ayuda visible debajo del campo */
   helpText: z.string().optional(),
+  /** 
+   * Indicador si el campo corresponde a la Historia Clínica (DNI).
+   * Permite al frontend marcar este campo para autocompletado y renderizado dinámico,
+   * evitando errores de validación de Zod en el backend cuando se guardan plantillas con este flag.
+   */
+  isClinicalHistory: z.boolean().optional(),
 });
 
 export type FormField = z.infer<typeof formFieldSchema>;
