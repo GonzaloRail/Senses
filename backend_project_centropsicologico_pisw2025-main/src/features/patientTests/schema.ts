@@ -30,6 +30,8 @@ export const createPatientTestSchema = z.object({
     isGeneralDoc: z.boolean().optional(),
     documentId: z.string().uuid("Document ID must be a valid UUID").optional(),
     appointmentId: z.string().uuid("Appointment ID must be a valid UUID").optional(),
+    /** Modo de entrega: DOCUMENT (sube archivo) o FORM (llena formulario dinámico) */
+    submissionMode: z.enum(["DOCUMENT", "FORM"]).optional(),
   }),
 });
 

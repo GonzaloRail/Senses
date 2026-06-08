@@ -131,6 +131,16 @@ export const getEvaluationByIdService = async ({
           description: true,
           isActive: true,
           document: true,
+          formTemplate: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              fieldsSchema: true,
+              isActive: true,
+              isDefault: true,
+            },
+          },
         },
       },
     },
@@ -355,13 +365,44 @@ export const getAllEvaluationsByClinicalHistoryIdSortedBySectionService =
             id: true,
             name: true,
             document: true,
+            formTemplate: {
+              select: {
+                id: true,
+                name: true,
+                fieldsSchema: true,
+              },
+            },
             patientTests: {
               where: {
                 clinicalHistoryId: id,
               },
+              orderBy: {
+                completedAt: "desc",
+              },
               select: {
                 id: true,
+                submissionMode: true,
+                completedAt: true,
+                completedBy: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                appointment: {
+                  select: {
+                    id: true,
+                    startDate: true,
+                  },
+                },
                 document: true,
+                formSubmission: {
+                  select: {
+                    id: true,
+                    responseData: true,
+                  },
+                },
               },
             },
           },

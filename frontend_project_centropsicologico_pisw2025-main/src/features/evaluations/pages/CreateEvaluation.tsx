@@ -16,11 +16,69 @@ import {
 } from "../hooks/useEvaluationsMutations";
 import { useAuth } from "@/store/auth/auth.store";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
+import { createFormTemplateApi } from "../api/formTemplatesApi";
+
+const mapFieldToBackend = (q: any, idx: number): any => {
+  let type = q.type;
+  if (type === "number") type = "NUMBER";
+  else if (type === "checkbox") type = "CHECKBOX";
+  else if (type === "select") type = "SELECT";
+  else if (type === "text") type = "TEXT";
+
+  return {
+    id: q.id,
+    label: q.label,
+    type: type,
+    required: q.required || false,
+    order: q.order !== undefined ? q.order : idx,
+    options: q.options || undefined,
+    placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
+    helpText: q.helpText,
+    isClinicalHistory: q.isClinicalHistory,
+  };
+};
+
+const mapFormQuestionsToFieldsSchema = (questionsJsonStr: string) => {
+  try {
+    const parsed = JSON.parse(questionsJsonStr);
+    
+    // Retrocompatibilidad con esquemas planos
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type !== undefined) {
+      return [
+        {
+          id: "default_section",
+          title: "Información General",
+          order: 0,
+          fields: parsed.map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+          subsections: [],
+        },
+      ];
+    }
+
+    return parsed.map((sec: any, secIdx: number) => ({
+      id: sec.id,
+      title: sec.title || `Sección ${secIdx + 1}`,
+      order: sec.order !== undefined ? sec.order : secIdx,
+      fields: (sec.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      subsections: (sec.subsections || []).map((sub: any, subIdx: number) => ({
+        id: sub.id,
+        title: sub.title || `Subsección ${subIdx + 1}`,
+        order: sub.order !== undefined ? sub.order : subIdx,
+        fields: (sub.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      })),
+    }));
+  } catch (e) {
+    console.error("Error parsing templateContent", e);
+    return [];
+  }
+};
 
 export const CreateEvaluation = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // PROTOTIPO HÍBRIDO: Un solo modal para carga de Word (el formulario se diseña inline)
   const [isAddTestModalOpen, setIsAddTestModalOpen] = useState(false);
   const { showAlert } = useAlert();
 
@@ -42,8 +100,9 @@ export const CreateEvaluation = () => {
     name: string;
     description: string;
     filename: string;
-    testFile: File;
+    testFile?: File;
     isNew: boolean;
+    templateContent?: string;
   }) => {
     const currentTests = form.getValues("psychologicalTests");
     form.setValue("psychologicalTests", [...currentTests, test]);
@@ -51,12 +110,10 @@ export const CreateEvaluation = () => {
 
   const handleRemoveTest = (index: number) => {
     const currentTests = form.getValues("psychologicalTests");
-    console.log(currentTests);
     form.setValue(
       "psychologicalTests",
       currentTests.filter((_, i) => i !== index)
     );
-    console.log(form.getValues("psychologicalTests"));
     showAlert("Prueba eliminada", "success");
   };
 
@@ -90,48 +147,86 @@ export const CreateEvaluation = () => {
         );
       });
 
-      // 2. Si hay pruebas, subirlas a Supabase y crear los tests
+      // 2. Si hay pruebas, procesarlas (híbrido) y cargarlas al backend
       if (data.psychologicalTests && data.psychologicalTests.length > 0) {
-        showAlert("Subiendo archivos...", "info");
+        showAlert("Procesando pruebas e informes...", "info");
 
-        // Subir todos los archivos y obtener sus URLs
+        // Procesar todos los tests por separado
         const testsWithUrls = await Promise.all(
           data.psychologicalTests.map(async (test) => {
+            let filePath = "";
+            // Si tiene plantilla de Word adjunta, la subimos a Supabase/Local
             if (test.testFile) {
-              const filePath = await uploadFile(test.testFile, test.filename);
-              return {
-                name: test.name,
-                description: test.description,
-                filename: test.filename,
-                filePath,
-                evaluationId: createdEvaluation.id,
-                createdById: user?.id,
-              };
+              filePath = await uploadFile(test.testFile, test.filename);
             }
-            return null;
+            
+            return {
+              name: test.name,
+              description: test.description || "",
+              filename: test.filename,
+              filePath: filePath || null,
+              evaluationId: createdEvaluation.id,
+              createdById: user?.id,
+              // PROTOTIPO HÍBRIDO: Agregamos el JSON de las preguntas que se guardará en Test.templateContent
+              templateContent: (test as any).templateContent || null, 
+            };
           })
         );
 
-        // Filtrar nulls y crear todos los tests
-        const validTests = testsWithUrls.filter((test) => test !== null);
-        console.log("Tests a crear:", validTests);
+        console.log("Tests a crear en Base de Datos:", testsWithUrls);
 
-        createTestsBatch(
-          { testsToCreate: validTests },
-          {
-            onSuccess: () => {
-              showAlert(
-                `Evaluación creada con ${validTests.length} prueba(s)`,
-                "success"
-              );
-            },
-          }
-        );
+        await new Promise<void>((resolve, reject) => {
+          createTestsBatch(
+            { testsToCreate: testsWithUrls },
+            {
+              onSuccess: async (batchResponse) => {
+                // Si hay formularios dinámicos creados inline, los subimos a su respectiva API
+                const createdTests = (batchResponse as any).tests || [];
+                
+                await Promise.all(
+                  createdTests.map(async (createdTest: any, index: number) => {
+                    const originalTest = data.psychologicalTests?.[index];
+
+                    if (originalTest && (originalTest as any).templateContent) {
+                      const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
+                      if (fieldsSchema.length > 0) {
+                        try {
+                          await createFormTemplateApi({
+                            formTemplate: {
+                              name: createdTest.name,
+                              description: createdTest.description || "",
+                              isDefault: false,
+                              fieldsSchema,
+                              createdById: user?.id || "",
+                              testId: createdTest.id,
+                            }
+                          });
+                        } catch (err) {
+                          console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                        }
+                      }
+                    }
+                  })
+                );
+
+                showAlert(
+                  `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
+                  "success"
+                );
+                resolve();
+              },
+              onError: (err) => {
+                console.error("Error al crear pruebas:", err);
+                reject(err);
+              }
+            }
+          );
+        });
       } else {
         showAlert("Evaluación creada correctamente", "success");
       }
 
-      navigate(`/evaluations/${createdEvaluation.id}`);
+      navigate("/evaluations");
     } catch (error) {
       console.error("Error creating evaluation:", error);
       showAlert("Error al crear la evaluación", "error");
@@ -159,6 +254,7 @@ export const CreateEvaluation = () => {
         handleCancel={handleCancel}
         loading={loading}
       />
+      {/* Modal: Carga de Word clásica */}
       <AddTestModal
         isOpen={isAddTestModalOpen}
         onClose={() => setIsAddTestModalOpen(false)}

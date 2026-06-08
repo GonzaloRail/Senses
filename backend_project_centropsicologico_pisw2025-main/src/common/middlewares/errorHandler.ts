@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../utils";
 import { env } from "../config/env";
-
+//Nuevo
 interface ErrorResponse {
   status: "error";
   message: string;
@@ -23,7 +23,21 @@ export const errorHandler: ErrorRequestHandler = (
 ) => {
   // Log completo en desarrollo, log básico en producción
   if (env.isDev) {
-    console.error("❌ Error capturado:", err);
+    // Serialización segura: algunos errores de Prisma tienen refs circulares
+    // que hacen que console.error explote internamente
+    try {
+      console.error("Error capturado:", err);
+    } catch {
+      try {
+        const safeMsg =
+          err instanceof Error
+            ? `[${err.name}] ${err.message}`
+            : JSON.stringify(err, null, 2);
+        console.error("Error capturado (safe):", safeMsg);
+      } catch {
+        console.error("Error capturado: [no serializable]");
+      }
+    }
   } else {
     console.error(
       "Error:",

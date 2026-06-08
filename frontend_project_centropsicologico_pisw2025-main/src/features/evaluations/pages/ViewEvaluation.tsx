@@ -14,6 +14,17 @@ import type { Evaluation } from "@/shared/interfaces/models";
 import { useUpdateEvaluationStatus } from "../hooks/useEvaluationsMutations";
 import { useAlert } from "@/shared/hooks/useAlert";
 
+const mapFieldsSchemaToFormQuestions = (fieldsSchema: any): string => {
+  if (!fieldsSchema) return "[]";
+  try {
+    const list = Array.isArray(fieldsSchema) ? fieldsSchema : JSON.parse(fieldsSchema);
+    return JSON.stringify(list);
+  } catch (e) {
+    console.error("Error parsing fieldsSchema", e);
+    return "[]";
+  }
+};
+
 export const ViewEvaluation = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -94,12 +105,13 @@ export const ViewEvaluation = () => {
       description: evaluationData.description,
       isActive: evaluationData.isActive,
       openNewSection: evaluationData.openNewSection,
-      psychologicalTests: evaluationData.tests?.map((test) => ({
+      psychologicalTests: evaluationData.tests?.map((test: any) => ({
         id: test.id,
         name: test.name,
         description: test.description,
-        filename: test.document?.name || "Documento sin nombre",
+        filename: test.document?.name || (test.formTemplate ? "Formulario digital" : "Documento sin nombre"),
         fileurl: test.document?.fileUrl,
+        templateContent: test.formTemplate ? mapFieldsSchemaToFormQuestions(test.formTemplate.fieldsSchema) : undefined,
       })),
     });
   }, [form, evaluationData]);

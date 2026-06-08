@@ -109,6 +109,14 @@ export const getPatientTestByIdService = async ({
           type: true,
         },
       },
+      // Respuesta de formulario dinámico (si submissionMode = FORM)
+      formSubmission: {
+        include: {
+          formTemplate: {
+            select: { id: true, name: true, fieldsSchema: true },
+          },
+        },
+      },
     },
   });
 
@@ -134,6 +142,7 @@ export const createPatientTestService = async (
         connect: { id: data.completedById },
       },
       isGeneralDoc: data.isGeneralDoc ?? false,
+      submissionMode: data.submissionMode ?? "DOCUMENT",
       ...(data.documentId && {
         document: {
           connect: { id: data.documentId },
@@ -257,9 +266,22 @@ export const getPatientTestsByAppointmentIdService = async ({
             include: {
               evaluation: true,
               document: true,
+              formTemplate: {
+                select: {
+                  id: true,
+                  name: true,
+                  fieldsSchema: true,
+                },
+              },
             },
           },
           document: true,
+          formSubmission: {
+            select: {
+              id: true,
+              responseData: true,
+            },
+          },
         },
       },
     },
@@ -297,10 +319,13 @@ export const getPatientTestsByAppointmentIdService = async ({
         id: patientTest.id,
         testId: patientTest.testId,
         name: patientTest.test.name,
+        submissionMode: patientTest.submissionMode,
         documentId: patientTest.document?.id,
         templateUrl,
         uploadedFileName: patientTest.document?.name,
         uploadedFileUrl,
+        formTemplate: patientTest.test.formTemplate ?? null,
+        formSubmission: patientTest.formSubmission ?? null,
       });
     })
   );

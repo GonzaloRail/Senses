@@ -29,6 +29,22 @@ enum DocumentType {
   EVALUATION_TEST
 }
 
+enum SubmissionMode {
+  DOCUMENT
+  FORM
+}
+
+enum FormFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DATE
+  SELECT
+  RADIO
+  CHECKBOX
+  SCALE
+}
+
 enum MaritalStatus {
   SINGLE
   MARRIED
@@ -106,11 +122,14 @@ model Test {
   // Relation to completed tests based on this template
   patientTests PatientTest[]
 
+  // Formulario dinámico asociado a este test (opcional)
+  formTemplate FormTemplate?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model PatientTest {     
+model PatientTest {
   id     String @id @default(uuid())
   // Reference to the original template
   testId String
@@ -128,6 +147,12 @@ model PatientTest {
   document Document?
 
   isGeneralDoc Boolean @default(false)
+
+  // Modo de entrega: archivo subido o formulario llenado
+  submissionMode SubmissionMode @default(DOCUMENT)
+
+  // Respuesta de formulario dinámico (si submissionMode = FORM)
+  formSubmission FormSubmission?
 
   // Who completed this test
   completedById String // Should be a PSYCHOLOGIST
@@ -362,6 +387,62 @@ model Document {
   updatedAt DateTime @updatedAt
 }
 
+// ─────────────────────────────────────────────
+// Formularios dinámicos
+// ─────────────────────────────────────────────
+
+/// Plantilla de formulario dinámica creada por el Admin.
+/// fieldsSchema es un array JSON con la definición de cada campo.
+/// Ejemplo de un campo:
+/// { "id": "uuid", "label": "Motivo", "type": "TEXTAREA", "required": true, "order": 1, "options": [] }
+model FormTemplate {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false) // Si true, aparece por defecto para todos los psicólogos
+
+  /// Esquema de campos almacenado como JSONB
+  fieldsSchema Json
+
+  // Quién creó la plantilla (Admin)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  // Vinculación opcional con un Test existente (1-a-1)
+  testId String? @unique
+  test   Test?   @relation(fields: [testId], references: [id])
+
+  formSubmissions FormSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Respuestas de un psicólogo a un FormTemplate, vinculadas a un PatientTest.
+/// responseData es un objeto JSON { "field_id": valor, ... } almacenado como JSONB.
+model FormSubmission {
+  id String @id @default(uuid())
+
+  // Plantilla usada
+  formTemplateId String
+  formTemplate   FormTemplate @relation(fields: [formTemplateId], references: [id])
+
+  /// Respuestas en JSONB
+  responseData Json
+
+  // Ligado al PatientTest (1-a-1)
+  patientTestId String?      @unique
+  patientTest   PatientTest? @relation(fields: [patientTestId], references: [id])
+
+  // Quién lo completó
+  completedById String
+  completedBy   User   @relation(fields: [completedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model EmployeeLeave {
   id        String   @id @default(uuid())
   startDate DateTime
@@ -405,6 +486,10 @@ model User {
   createdTests   Test[] // Tests (templates) created by this user (ADMIN)
   evaluations    Evaluation[] // Evaluations created by this user (ADMIN)
   patientTests   PatientTest[] // Completed tests by this user (Psychologist)
+
+  // Formularios dinámicos
+  formTemplates    FormTemplate[]   // Plantillas creadas por este usuario (ADMIN)
+  formSubmissions  FormSubmission[] // Respuestas completadas por este usuario (Psychologist)
 
   // NUEVO: Relaciones para tokens
   authTokens     AuthToken[]

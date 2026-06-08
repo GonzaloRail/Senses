@@ -45,7 +45,7 @@ export const AddTestModal = ({ isOpen, handleClose, evaluationId, existingTests,
         id: "",
         testId: selectedOption.id,
         name: selectedOption.name,
-        templateUrl: selectedOption.document.fileUrl,
+        templateUrl: selectedOption.document?.fileUrl || "",
       });
       setSelectedTestId("");
       handleClose();

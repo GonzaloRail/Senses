@@ -60,8 +60,8 @@ export const createTestsBatchSchema = z.object({
           description: z.string().optional(),
           evaluationId: z.string().uuid("Evaluation ID must be a valid UUID"),
           createdById: z.string().uuid("CreatedBy ID must be a valid UUID"),
-          filename: z.string().min(1, "Filename is required"),
-          filePath: z.string().min(1, "File PATH must be valid"),
+          filename: z.string().min(1, "Filename is required").nullable().optional(),
+          filePath: z.string().min(1, "File PATH must be valid").nullable().optional(),
         })
       )
       .min(1, "At least one test is required"),

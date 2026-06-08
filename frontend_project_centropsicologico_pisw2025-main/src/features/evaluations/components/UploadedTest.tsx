@@ -8,20 +8,41 @@ interface UploadedTestProps {
   description?: string;
   isViewMode?: boolean;
   onRemove?: () => void;
+  templateContent?: string;
+  onEdit?: () => void;
+  testFile?: File;
 }
 
-export const UploadedTest = ({ name, filename, fileurl, description, isViewMode = false, onRemove }: UploadedTestProps) => {
+export const UploadedTest = ({
+  name,
+  filename,
+  fileurl,
+  description,
+  isViewMode = false,
+  onRemove,
+  templateContent,
+  onEdit,
+  testFile,
+}: UploadedTestProps) => {
   const handleShowDocument = () => {
-    window.open(fileurl, "_blank")?.focus();
-  }
+    if (fileurl) {
+      window.open(fileurl, "_blank")?.focus();
+    } else if (testFile) {
+      const localUrl = URL.createObjectURL(testFile);
+      window.open(localUrl, "_blank")?.focus();
+    }
+  };
 
   return (
     <Card className="gap-2">
       <CardHeader>
         <CardTitle>{name}</CardTitle>
         <CardDescription>
-          Se ha cargado el siguiente archivo: <strong>{filename}</strong>
-
+          {templateContent ? (
+            <span>Formulario digital creado: <strong>{filename}</strong></span>
+          ) : (
+            <span>Se ha cargado el siguiente archivo: <strong>{filename}</strong></span>
+          )}
         </CardDescription>
       </CardHeader>
       {
@@ -32,12 +53,25 @@ export const UploadedTest = ({ name, filename, fileurl, description, isViewMode 
         )
       }
       <CardFooter className="flex flex-row gap-1 justify-end">
-        <Button
-          onClick={handleShowDocument}
-          type="button"
-          className="bg-white border-gray-400 border text-senses-primary hover:cursor-pointer hover:bg-senses-primary/20 hover:text-senses-primary">
-          Ver documento
-        </Button>
+        {templateContent ? (
+          onEdit && (
+            <Button
+              onClick={onEdit}
+              type="button"
+              className="bg-white border-purple-400 border text-purple-700 hover:cursor-pointer hover:bg-purple-50 hover:text-purple-800">
+              Ver formulario
+            </Button>
+          )
+        ) : (
+          (fileurl || testFile) && (
+            <Button
+              onClick={handleShowDocument}
+              type="button"
+              className="bg-white border-gray-400 border text-senses-primary hover:cursor-pointer hover:bg-senses-primary/20 hover:text-senses-primary">
+              Ver documento
+            </Button>
+          )
+        )}
         {
           !isViewMode && onRemove && (
             <Button
@@ -52,5 +86,5 @@ export const UploadedTest = ({ name, filename, fileurl, description, isViewMode 
 
       </CardFooter>
     </Card>
-  )
-}
+  );
+};
