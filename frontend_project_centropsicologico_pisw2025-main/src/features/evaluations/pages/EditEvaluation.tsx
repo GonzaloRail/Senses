@@ -22,24 +22,55 @@ import { useAuth } from "@/store/auth/auth.store";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
 import { createFormTemplateApi } from "../api/formTemplatesApi";
 
+const mapFieldToBackend = (q: any, idx: number): any => {
+  let type = q.type;
+  if (type === "number") type = "NUMBER";
+  else if (type === "checkbox") type = "CHECKBOX";
+  else if (type === "select") type = "SELECT";
+  else if (type === "text") type = "TEXT";
+
+  return {
+    id: q.id,
+    label: q.label,
+    type: type,
+    required: q.required || false,
+    order: q.order !== undefined ? q.order : idx,
+    options: q.options || undefined,
+    placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
+    helpText: q.helpText,
+    isClinicalHistory: q.isClinicalHistory,
+  };
+};
+
 const mapFormQuestionsToFieldsSchema = (questionsJsonStr: string) => {
   try {
-    const questions = JSON.parse(questionsJsonStr);
-    return questions.map((q: any, idx: number) => {
-      let type: "TEXT" | "TEXTAREA" | "NUMBER" | "DATE" | "SELECT" | "RADIO" | "CHECKBOX" | "SCALE" = "TEXTAREA";
-      if (q.type === "number") type = "NUMBER";
-      else if (q.type === "checkbox") type = "CHECKBOX";
-      else if (q.type === "select") type = "SELECT";
+    const parsed = JSON.parse(questionsJsonStr);
+    
+    // Retrocompatibilidad con esquemas planos
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type !== undefined) {
+      return [
+        {
+          id: "default_section",
+          title: "Información General",
+          order: 0,
+          fields: parsed.map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+          subsections: [],
+        },
+      ];
+    }
 
-      return {
-        label: q.label,
-        type: type,
-        required: q.required || false,
-        order: idx,
-        options: q.options || undefined,
-        placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
-      };
-    });
+    return parsed.map((sec: any, secIdx: number) => ({
+      id: sec.id,
+      title: sec.title || `Sección ${secIdx + 1}`,
+      order: sec.order !== undefined ? sec.order : secIdx,
+      fields: (sec.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      subsections: (sec.subsections || []).map((sub: any, subIdx: number) => ({
+        id: sub.id,
+        title: sub.title || `Subsección ${subIdx + 1}`,
+        order: sub.order !== undefined ? sub.order : subIdx,
+        fields: (sub.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      })),
+    }));
   } catch (e) {
     console.error("Error parsing templateContent", e);
     return [];
@@ -50,21 +81,8 @@ const mapFieldsSchemaToFormQuestions = (fieldsSchema: any): string => {
   if (!fieldsSchema) return "[]";
   try {
     const list = Array.isArray(fieldsSchema) ? fieldsSchema : JSON.parse(fieldsSchema);
-    const mapped = list.map((field: any, index: number) => {
-      let type: "number" | "text" | "checkbox" | "select" = "text";
-      if (field.type === "NUMBER") type = "number";
-      else if (field.type === "CHECKBOX") type = "checkbox";
-      else if (field.type === "SELECT") type = "select";
-
-      return {
-        id: field.id || `campo_${Date.now()}_${index}`,
-        label: field.label,
-        type: type,
-        required: field.required || false,
-        options: field.options,
-      };
-    });
-    return JSON.stringify(mapped);
+    // Para el diseñador inline, mantenemos la estructura de secciones/subsecciones tal cual
+    return JSON.stringify(list);
   } catch (e) {
     console.error("Error parsing fieldsSchema", e);
     return "[]";

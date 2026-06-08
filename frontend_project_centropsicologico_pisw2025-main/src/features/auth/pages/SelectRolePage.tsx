@@ -32,6 +32,12 @@ export const SelectRolePage = () => {
   const accessToken = useAuth((state) => state.accessToken);
   const roleSelected = useAuth((state) => state.roleSelected);
 
+  useEffect(() => {
+    if (accessToken && roleSelected) {
+      navigate("/");
+    }
+  }, [accessToken, navigate, roleSelected]);
+
   if (!isAuthBootstrapped || !user) {
     console.log("SelectRolePage - Showing spinner");
     return (
@@ -73,14 +79,6 @@ export const SelectRolePage = () => {
       navigate("/auth");
     }
   };
-
-
-  useEffect(() => {
-    if (accessToken && roleSelected) {
-      navigate("/");
-    }
-  }, [accessToken, navigate, roleSelected]);
-
   return (
     <div className="flex flex-col items-center justify-center">
       <h1 className="scroll-m-20 text-3xl font-bold tracking-tight mb-10 lg:text-4xl text-senses-primary text-center">

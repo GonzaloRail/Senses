@@ -18,21 +18,7 @@ const mapFieldsSchemaToFormQuestions = (fieldsSchema: any): string => {
   if (!fieldsSchema) return "[]";
   try {
     const list = Array.isArray(fieldsSchema) ? fieldsSchema : JSON.parse(fieldsSchema);
-    const mapped = list.map((field: any, index: number) => {
-      let type: "number" | "text" | "checkbox" | "select" = "text";
-      if (field.type === "NUMBER") type = "number";
-      else if (field.type === "CHECKBOX") type = "checkbox";
-      else if (field.type === "SELECT") type = "select";
-
-      return {
-        id: field.id || `campo_${Date.now()}_${index}`,
-        label: field.label,
-        type: type,
-        required: field.required || false,
-        options: field.options,
-      };
-    });
-    return JSON.stringify(mapped);
+    return JSON.stringify(list);
   } catch (e) {
     console.error("Error parsing fieldsSchema", e);
     return "[]";

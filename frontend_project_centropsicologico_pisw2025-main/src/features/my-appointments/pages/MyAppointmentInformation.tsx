@@ -557,6 +557,7 @@ export const MyAppointmentInformation = () => {
           formTemplateName={activeFormFillerData.formTemplateName}
           fieldsSchema={activeFormFillerData.fieldsSchema}
           existingResponseData={activeFormFillerData.existingSubmission?.responseData}
+          patientDni={patient?.dni}
           onSave={handleSaveFormAnswers}
         />
       )}

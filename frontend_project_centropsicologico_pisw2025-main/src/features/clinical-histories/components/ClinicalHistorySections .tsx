@@ -250,26 +250,14 @@ const TestActions = ({
       {isForm ? (
         <>
           {hasPatientTest && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleOpenForm(true)}
-              >
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Ver Respuestas
-              </Button>
-              {roleSelected === "PSYCHOLOGIST" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleOpenForm(false)}
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Actualizar
-                </Button>
-              )}
-            </>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleOpenForm(true)}
+            >
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Ver Respuestas
+            </Button>
           )}
 
           {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
@@ -287,34 +275,16 @@ const TestActions = ({
       ) : (
         <>
           {hasPatientTest && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  window.open(test.patientTests[0].document?.fileUrl, "_blank")
-                }
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Descargar
-              </Button>
-              <input
-                type="file"
-                ref={fileInputUpdatedRef}
-                onChange={handleUpdatePatientTest}
-                className="hidden"
-              />
-              {roleSelected === "PSYCHOLOGIST" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleUploadUpdatedPatientTest}
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Actualizar
-                </Button>
-              )}
-            </>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                window.open(test.patientTests[0].document?.fileUrl, "_blank")
+              }
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Descargar
+            </Button>
           )}
 
           {hasTemplate && (
