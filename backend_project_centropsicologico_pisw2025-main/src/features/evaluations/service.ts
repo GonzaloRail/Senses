@@ -393,7 +393,7 @@ export const getAllEvaluationsByClinicalHistoryIdSortedBySectionService =
                 appointment: {
                   select: {
                     id: true,
-                    date: true,
+                    startDate: true,
                   },
                 },
                 document: true,
