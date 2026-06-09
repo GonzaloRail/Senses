@@ -12,10 +12,100 @@ import { DataTable } from "@/shared/components/DataTable";
 import { SiteHeader } from "@/shared/components/SiteHeader";
 import type { PatientsPaginatedResponse } from "@/shared/interfaces/apiResponses/getAllPatientsPaginatedResponse";
 import type { PatientsListSchema } from "@/shared/interfaces/tables/PatientsListSchema";
+import type { Patient } from "@/shared/interfaces/models";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { exportPatientsToExcelApi, getAllPatientsApi } from "../api/patientsApi";
+import { getAllPatientsApi, getPatientByIdApi } from "../api/patientsApi";
+import {
+  complementaryExportColumns,
+  extractComplementaryFormValues,
+} from "../utils/patientComplementaryFields";
+
+const genderLabels: Record<string, string> = {
+  MALE: "Masculino",
+  FEMALE: "Femenino",
+  LGBTQ: "LGBTQ+",
+  NOT_SPECIFIED: "No especificado",
+};
+
+const maritalStatusLabels: Record<string, string> = {
+  SINGLE: "Soltero/a",
+  MARRIED: "Casado/a",
+  WIDOWED: "Viudo/a",
+  DIVORCED: "Divorciado/a",
+  COHABITANT: "Conviviente",
+};
+
+const csvValue = (value: unknown) => {
+  const normalized = value == null ? "" : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const formatDate = (date?: Date | string) => {
+  if (!date) return "";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "";
+  return parsedDate.toLocaleDateString("es-PE");
+};
+
+const buildPatientsCsv = (patients: Partial<Patient>[]) => {
+  const baseColumns = [
+    { key: "firstName", label: "Nombre" },
+    { key: "lastName", label: "Apellido" },
+    { key: "dni", label: "DNI" },
+    { key: "gender", label: "Género" },
+    { key: "birthdate", label: "Fecha de nacimiento" },
+    { key: "educationLevel", label: "Nivel educativo" },
+    { key: "birthPlace", label: "Lugar de nacimiento" },
+    { key: "occupation", label: "Ocupación" },
+    { key: "address", label: "Dirección" },
+    { key: "maritalStatus", label: "Estado civil" },
+    { key: "religion", label: "Religión" },
+    { key: "occupationLocation", label: "Lugar de trabajo" },
+    { key: "phoneNumber", label: "Teléfono" },
+    { key: "parentFullName", label: "Nombre del apoderado" },
+    { key: "parentDni", label: "DNI del apoderado" },
+    { key: "parentPhoneNumber", label: "Teléfono del apoderado" },
+  ] as const;
+
+  const headers = [
+    ...baseColumns.map((column) => column.label),
+    ...complementaryExportColumns.map((column) => column.label),
+  ];
+
+  const rows = patients.map((patient) => {
+    const complementaryValues = extractComplementaryFormValues(patient);
+    const baseValues = baseColumns.map((column) => {
+      if (column.key === "gender") {
+        return genderLabels[String(patient.gender)] ?? patient.gender ?? "";
+      }
+
+      if (column.key === "maritalStatus") {
+        return (
+          maritalStatusLabels[String(patient.maritalStatus)] ??
+          patient.maritalStatus ??
+          ""
+        );
+      }
+
+      if (column.key === "birthdate") {
+        return formatDate(patient.birthdate);
+      }
+
+      return patient[column.key] ?? "";
+    });
+
+    const complementaryRowValues = complementaryExportColumns.map((column) => {
+      const value = complementaryValues[column.key];
+      return typeof value === "boolean" ? (value ? "Sí" : "No") : value;
+    });
+
+    return [...baseValues, ...complementaryRowValues].map(csvValue).join(",");
+  });
+
+  return [headers.map(csvValue).join(","), ...rows].join("\n");
+};
 
 export const PatientsList = () => {
   const navigate = useNavigate();
@@ -108,13 +198,31 @@ export const PatientsList = () => {
   }, [appliedFilters]);
 
   const downloadExcel = async () => {
-    const blob = await exportPatientsToExcelApi();
+    const firstPage = await getAllPatientsApi({ page: 1, take: 100 });
+    const remainingPages = Array.from(
+      { length: Math.max(firstPage.totalPages - 1, 0) },
+      (_, index) => index + 2
+    );
+    const remainingResponses = await Promise.all(
+      remainingPages.map((page) => getAllPatientsApi({ page, take: 100 }))
+    );
+    const patients = [
+      ...firstPage.patients,
+      ...remainingResponses.flatMap((response) => response.patients),
+    ];
+    const patientsWithDetails = await Promise.all(
+      patients.map((patient) => getPatientByIdApi({ id: patient.id }))
+    );
+    const csv = buildPatientsCsv(patientsWithDetails);
+    const blob = new Blob([`\uFEFF${csv}`], {
+      type: "text/csv;charset=utf-8;",
+    });
 
     const url = window.URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "pacientes.xlsx";
+    a.download = "pacientes.csv";
     document.body.appendChild(a);
     a.click();
     a.remove();
