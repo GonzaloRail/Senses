@@ -269,13 +269,34 @@ export const PatientForm = ({ data, patientId }: PatientFormProps) => {
 
     setLoading(true);
     try {
-      const stripComplementary = (
-        data: Record<string, unknown>
+      const removeKeys = (
+        data: Record<string, unknown>,
+        keysToRemove: string[]
       ): Record<string, unknown> => {
         return Object.fromEntries(
           Object.entries(data).filter(
-            ([key]) => !complementaryFieldKeys.includes(key)
+            ([key]) => !keysToRemove.includes(key)
           )
+        );
+      };
+
+      const getPayloadReadyForApi = (
+        data: Record<string, unknown>,
+        keysToIgnoreEmpty: string[] = []
+      ) => {
+        const keysToRemove = showComplementary
+          ? ["provinceId", "regionId", ...keysToIgnoreEmpty]
+          : [
+              "provinceId",
+              "regionId",
+              ...keysToIgnoreEmpty,
+              ...complementaryFieldKeys,
+            ];
+
+        const cleaned = removeKeys(data, keysToRemove);
+
+        return Object.fromEntries(
+          Object.entries(cleaned).filter(([_, value]) => value !== "")
         );
       };
 
@@ -293,11 +314,7 @@ export const PatientForm = ({ data, patientId }: PatientFormProps) => {
           regionId: "",
         };
 
-        const cleaned = stripComplementary(payload);
-        const normalizedData = Object.fromEntries(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          Object.entries(cleaned).filter(([_, value]) => value !== "")
-        );
+        const normalizedData = getPayloadReadyForApi(payload);
         createPatient.mutate(normalizedData, {
           onSuccess: () => {
             navigate("/patients");
@@ -316,16 +333,7 @@ export const PatientForm = ({ data, patientId }: PatientFormProps) => {
           clinicalHistoryId: "",
         };
 
-        const keysToIgnoreEmpty = ["provinceId", "regionId", "clinicalHistoryId"];
-
-        const cleaned = stripComplementary(payload);
-        const normalizedData = Object.fromEntries(
-          Object.entries(cleaned).filter(([key, value]) => {
-            if (value == null) return false;
-            if (value === "" && keysToIgnoreEmpty.includes(key)) return false;
-            return true;
-          })
-        );
+        const normalizedData = getPayloadReadyForApi(payload, ["clinicalHistoryId"]);
 
         console.log("normalized", normalizedData);
         updatePatient.mutate(

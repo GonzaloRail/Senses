@@ -1,9 +1,23 @@
 import { z } from "zod";
 
+const optionalDniSchema = z
+  .string()
+  .refine((value) => value === "" || /^\d{8}$/.test(value), {
+    message: "El DNI debe tener exactamente 8 dígitos",
+  })
+  .optional();
+
+const optionalPhoneSchema = z
+  .string()
+  .refine((value) => value === "" || /^\d{9}$/.test(value), {
+    message: "El teléfono debe tener exactamente 9 dígitos",
+  })
+  .optional();
+
 export const patientFormSchema = z.object({
   firstName: z.string().min(1, "El nombre es obligatorio"),
   lastName: z.string().min(1, "El apellido es obligatorio"),
-  dni: z.string().min(8, "El DNI debe tener 8 caracteres"),
+  dni: z.string().regex(/^\d{8}$/, "El DNI debe tener exactamente 8 dígitos"),
   gender: z.string().min(1, "El género es obligatorio"),
   birthdate: z
     .string()
@@ -25,13 +39,15 @@ export const patientFormSchema = z.object({
   maritalStatus: z.string().min(1, "El estado civil es obligatorio"),
   religion: z.string().optional(),
   occupationLocation: z.string().min(1, "El lugar de trabajo es obligatorio"),
-  phoneNumber: z.string().min(6, "El teléfono es obligatorio"),
+  phoneNumber: z
+    .string()
+    .regex(/^\d{9}$/, "El teléfono debe tener exactamente 9 dígitos"),
   isActive: z.boolean().optional(),
   address: z.string().min(1, "La dirección es obligatoria"),
 
   parentFullName: z.coerce.string().optional(),
-  parentDni: z.coerce.string().optional(),
-  parentPhoneNumber: z.coerce.string().optional(),
+  parentDni: optionalDniSchema,
+  parentPhoneNumber: optionalPhoneSchema,
 
   districtId: z.string().min(1, "El distrito es obligatorio"),
   provinceId: z.string().min(1, "La provincia es obligatoria"),
