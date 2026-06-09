@@ -209,24 +209,83 @@ const checkScheduleOverlap = async (
 export const getUserByIdService = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      roles: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      dni: true,
+      email: true,
+      csp: true,
+      isActive: true,
+      isEmailVerified: true,
+      psychologistId: true,
+      createdAt: true,
+      updatedAt: true,
+      psychologist: {
         select: {
-          role: true,
+          id: true,
+          firstName: true,
+          lastName: true,
+          dni: true,
+          email: true,
         },
       },
-      documents: true,
-      workSchedule: true,
+      roles: {
+        select: {
+          role: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      documents: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          fileUrl: true,
+          filePath: true,
+          bucketName: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+      workSchedule: {
+        select: {
+          id: true,
+          day: true,
+          startTime: true,
+          endTime: true,
+          office: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              location: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          day: "asc",
+        },
+      },
     },
   });
 
   if (!user) {
     throw new AppError("Usuario no encontrado", 404);
   }
-  const { password, documents, ...restUser } = user;
 
   const documentsToReturn = await Promise.all(
-    documents.map(async (doc) => {
+    user.documents.map(async (doc) => {
       // Valida que filePath exista y no esté vacío
       if (!doc.filePath || doc.filePath.trim() === "") {
         console.warn(`⚠️ Documento ${doc.id} sin filePath`);
@@ -252,7 +311,48 @@ export const getUserByIdService = async (userId: string) => {
     })
   );
 
-  return { ...restUser, documents: documentsToReturn };
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    fullName: `${user.firstName} ${user.lastName}`,
+    dni: user.dni,
+    email: user.email,
+    csp: user.csp,
+    isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified,
+    psychologistId: user.psychologistId,
+    psychologist: user.psychologist
+      ? {
+          id: user.psychologist.id,
+          firstName: user.psychologist.firstName,
+          lastName: user.psychologist.lastName,
+          fullName: `${user.psychologist.firstName} ${user.psychologist.lastName}`,
+          dni: user.psychologist.dni,
+          email: user.psychologist.email,
+        }
+      : null,
+    roles: user.roles.map(({ role }) => role),
+    documents: documentsToReturn.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      fileUrl: doc.fileUrl,
+      filePath: doc.filePath,
+      bucketName: doc.bucketName,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    })),
+    workSchedule: user.workSchedule.map((schedule) => ({
+      id: schedule.id,
+      day: schedule.day,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      office: schedule.office,
+    })),
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 };
 
 export const getAllUsersService = async ({
