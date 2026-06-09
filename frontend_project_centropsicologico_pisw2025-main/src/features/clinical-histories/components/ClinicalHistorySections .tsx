@@ -11,7 +11,6 @@ import {
 } from "@/features/my-appointments/api/myAppointmentsApi";
 import {
   useCreatePatientTest,
-  useUpdatePatientTest,
 } from "@/features/my-appointments/hooks/usePatientTestMutations";
 import { useAlert } from "@/shared/hooks/useAlert";
 import { useSpinner } from "@/shared/hooks/useSpinner";
@@ -21,79 +20,355 @@ import type {
   Section,
   Test,
 } from "@/shared/interfaces/models";
+import type { PatientTest } from "@/shared/interfaces/models/PatientTest";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
 import { useAuth } from "@/store/auth/auth.store";
-import { Download, FileText, Upload, Pencil, ClipboardList } from "lucide-react";
+import { formatDateTime } from "@/shared/utils/formatters";
+import {
+  Download,
+  FileText,
+  Upload,
+  ClipboardList,
+  Clock,
+  User,
+  ChevronDown,
+  ChevronRight,
+  PlusCircle,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { getFormTemplateByTestIdApi } from "@/features/evaluations/api/formTemplatesApi";
-import { createFormSubmissionApi, updateFormSubmissionApi } from "@/features/evaluations/api/formSubmissionsApi";
+import { PDFDownloadButton } from "./PDFDownloadButton";
+import {
+  createFormSubmissionApi,
+} from "@/features/evaluations/api/formSubmissionsApi";
 import { FormFillerModal } from "../../my-appointments/components/FormFillerModal";
 
-// Components
-const TestActions = ({
+// ─── Subcomponente: historial de una aplicación individual ────────────────────
+
+interface TestApplicationRowProps {
+  patientTest: PatientTest;
+  clinicalHistory: ClinicalHistory;
+  onViewForm: (patientTest: PatientTest) => void;
+  index: number;
+  total: number;
+  test: Test;
+}
+
+const TestApplicationRow = ({
+  patientTest,
+  clinicalHistory,
+  onViewForm,
+  index,
+  total,
   test,
-  hasPatientTest,
+}: TestApplicationRowProps) => {
+  const isForm = patientTest.submissionMode === "FORM";
+  const hasDocument = !!patientTest.document?.fileUrl;
+
+  // Fecha a mostrar: primero la de la cita, si no, la de completedAt
+  const displayDate = patientTest.appointment?.startDate
+    ? formatDateTime(patientTest.appointment.startDate)
+    : patientTest.completedAt
+    ? formatDateTime(patientTest.completedAt)
+    : "Fecha desconocida";
+
+  const psychologistName = patientTest.completedBy
+    ? `Psic. ${patientTest.completedBy.firstName} ${patientTest.completedBy.lastName}`
+    : null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0.6rem 0.75rem",
+        borderRadius: "0.5rem",
+        backgroundColor: index % 2 === 0 ? "#f8fafc" : "#ffffff",
+        border: "1px solid #e2e8f0",
+        gap: "0.75rem",
+      }}
+    >
+      {/* Línea vertical de historial */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "2px",
+          minWidth: "20px",
+        }}
+      >
+        <div
+          style={{
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            backgroundColor: index === 0 ? "#4f46e5" : "#94a3b8",
+            flexShrink: 0,
+          }}
+        />
+        {index < total - 1 && (
+          <div
+            style={{
+              width: "2px",
+              height: "12px",
+              backgroundColor: "#e2e8f0",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Info: fecha y psicólogo */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: index === 0 ? "#4f46e5" : "#475569",
+          }}
+        >
+          <Clock size={13} />
+          <span>{displayDate}</span>
+          {index === 0 && (
+            <span
+              style={{
+                fontSize: "0.65rem",
+                backgroundColor: "#eef2ff",
+                color: "#4f46e5",
+                padding: "1px 6px",
+                borderRadius: "9999px",
+                fontWeight: 700,
+                border: "1px solid #c7d2fe",
+              }}
+            >
+              Más reciente
+            </span>
+          )}
+        </div>
+        {psychologistName && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              fontSize: "0.75rem",
+              color: "#64748b",
+              marginTop: "2px",
+            }}
+          >
+            <User size={11} />
+            <span>{psychologistName}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Botón de acción */}
+      <div style={{ flexShrink: 0, display: "flex", gap: "0.5rem" }}>
+        {isForm && patientTest.formSubmission ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onViewForm(patientTest)}
+              style={{ fontSize: "0.75rem", height: "30px" }}
+            >
+              <ClipboardList size={13} style={{ marginRight: "4px" }} />
+              Ver respuestas
+            </Button>
+            <PDFDownloadButton
+              testName={test.name}
+              patientTests={[patientTest]}
+              testId={test.id}
+              fieldsSchema={test.formTemplate?.fieldsSchema}
+              clinicalHistory={clinicalHistory}
+              label="Generar PDF"
+            />
+          </>
+        ) : hasDocument ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              window.open(patientTest.document?.fileUrl, "_blank")
+            }
+            style={{ fontSize: "0.75rem", height: "30px" }}
+          >
+            <Download size={13} style={{ marginRight: "4px" }} />
+            Descargar
+          </Button>
+        ) : (
+          <span
+            style={{
+              fontSize: "0.7rem",
+              color: "#94a3b8",
+              fontStyle: "italic",
+            }}
+          >
+            Sin archivo
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Subcomponente: acciones del test (lista de aplicaciones + nueva) ─────────
+
+const TestHistoryCard = ({
+  test,
   clinicalHistory,
   setIsDataLoading,
+  appointmentId,
 }: {
   test: Test;
-  hasPatientTest: boolean;
   clinicalHistory: ClinicalHistory;
-  setIsDataLoading: (isLoading: boolean) => void;
+  setIsDataLoading: (v: boolean) => void;
+  appointmentId?: string;
 }) => {
-  const hasTemplate = !!test.document;
   const { user, roleSelected } = useAuth();
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileInputUpdatedRef = useRef<HTMLInputElement>(null);
-
-  const { mutate: createPatientTest } = useCreatePatientTest();
-  const { mutate: updatePatientTest } = useUpdatePatientTest();
-
   const { showAlert } = useAlert();
+  const { mutate: createPatientTest } = useCreatePatientTest();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Dynamic form state
+  const [isExpanded, setIsExpanded] = useState(
+    test.patientTests.length > 0
+  );
+
+  // Modal de formulario
   const [isFormFillerOpen, setIsFormFillerOpen] = useState(false);
-  const [formTemplateData, setFormTemplateData] = useState<{
-    id: string;
-    name: string;
+  const [activeFormData, setActiveFormData] = useState<{
     fieldsSchema: any[];
+    formTemplateName: string;
+    responseData?: any;
+    isReadOnly: boolean;
+    patientTestId?: string;
+    formTemplateId?: string;
   } | null>(null);
-  const [isReadOnlyMode, setIsReadOnlyMode] = useState(true);
 
-  const handleUploadPatientTest = () => {
-    fileInputRef.current?.click(); // Abre el selector de archivos
+  const isForm = !!test.formTemplate || test.patientTests[0]?.submissionMode === "FORM";
+  const applicationsCount = test.patientTests.length;
+
+  // Ver respuestas de un intento específico (modo lectura)
+  const handleViewForm = async (patientTest: PatientTest) => {
+    let template = test.formTemplate;
+    if (!template) {
+      setIsDataLoading(true);
+      try {
+        const fetched = await getFormTemplateByTestIdApi(test.id);
+        if (fetched) template = fetched;
+      } catch {
+        showAlert("Esta prueba no tiene formulario digital configurado.", "error");
+        setIsDataLoading(false);
+        return;
+      }
+      setIsDataLoading(false);
+    }
+    if (template) {
+      setActiveFormData({
+        fieldsSchema: template.fieldsSchema,
+        formTemplateName: template.name,
+        responseData: patientTest.formSubmission?.responseData,
+        isReadOnly: true,
+      });
+      setIsFormFillerOpen(true);
+    }
   };
 
-  const handleUploadUpdatedPatientTest = () => {
-    fileInputUpdatedRef.current?.click(); // Abre el selector de archivos
+  // Nueva aplicación: formulario vacío para psicólogo
+  const handleNewFormApplication = async () => {
+    let template = test.formTemplate;
+    if (!template) {
+      setIsDataLoading(true);
+      try {
+        const fetched = await getFormTemplateByTestIdApi(test.id);
+        if (fetched) template = fetched;
+      } catch {
+        showAlert("Esta prueba no tiene formulario digital configurado.", "error");
+        setIsDataLoading(false);
+        return;
+      }
+      setIsDataLoading(false);
+    }
+    if (template) {
+      const lastSubmissionTest = test.patientTests?.find(
+        (pt: any) => pt.submissionMode === "FORM" && pt.formSubmission?.responseData
+      );
+      const prefilledData = lastSubmissionTest ? lastSubmissionTest.formSubmission?.responseData : undefined;
+
+      setActiveFormData({
+        fieldsSchema: template.fieldsSchema,
+        formTemplateName: template.name,
+        responseData: prefilledData,
+        isReadOnly: false,
+        formTemplateId: template.id,
+      });
+      setIsFormFillerOpen(true);
+    }
   };
 
-  const handleFileChange = async (
+  // Guardar nueva aplicación de formulario
+  const handleSaveNewFormApplication = async (answers: Record<string, any>) => {
+    if (!activeFormData?.formTemplateId) return;
+    setIsDataLoading(true);
+    try {
+      const newPatientTest = await createPatientTestApi({
+        testId: test.id,
+        clinicalHistoryId: clinicalHistory.id,
+        completedById: user?.id || "",
+        isGeneralDoc: false,
+        submissionMode: "FORM" as any,
+        appointmentId,
+      });
+      if (!newPatientTest) {
+        showAlert("Error al iniciar el registro de la prueba.", "error");
+        return;
+      }
+      await createFormSubmissionApi({
+        formTemplateId: activeFormData.formTemplateId,
+        responseData: answers,
+        completedById: user?.id || "",
+        patientTestId: newPatientTest.id,
+      });
+      showAlert("Nueva aplicación del formulario guardada correctamente", "success");
+      queryClient.invalidateQueries({ queryKey: ["clinical-history-sorted"] });
+      queryClient.invalidateQueries({ queryKey: ["clinical-history"] });
+    } catch (err) {
+      console.error("Error al guardar nueva aplicación:", err);
+      showAlert("Error al guardar el formulario.", "error");
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
+  // Subir nuevo archivo (nueva aplicación de documento)
+  const handleNewFileApplication = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setIsDataLoading(true);
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) { setIsDataLoading(false); return; }
+
     const filePath = await uploadFileToCloudStorage(
       file,
       clinicalHistory.patient?.dni ?? "Unknown",
       test.name
     );
-
     if (!filePath) {
       showAlert("Error al subir el archivo", "error");
+      setIsDataLoading(false);
       return;
     }
-
     const document = await createPatientTestDocumentApi({
       name: file.name,
       type: "EVALUATION_TEST",
       filePath,
       userId: user?.id || "",
     });
-
     createPatientTest(
       {
         clinicalHistoryId: clinicalHistory.id,
@@ -101,6 +376,7 @@ const TestActions = ({
         documentId: document.id,
         completedById: user?.id || "",
         isGeneralDoc: false,
+        appointmentId,
       },
       {
         onSuccess: () => {
@@ -108,236 +384,190 @@ const TestActions = ({
         },
       }
     );
-
     event.target.value = "";
     setIsDataLoading(false);
-  };
-
-  const handleUpdatePatientTest = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setIsDataLoading(true);
-
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const filePath = await uploadFileToCloudStorage(
-      file,
-      clinicalHistory.patient?.dni ?? "Unknown",
-      test.name
-    );
-
-    if (!filePath) {
-      showAlert("Error al subir el archivo", "error");
-      return;
-    }
-
-    const document = await createPatientTestDocumentApi({
-      name: file.name,
-      type: "EVALUATION_TEST",
-      filePath,
-      userId: user?.id || "",
-    });
-
-    if (!document) {
-      showAlert("Error al crear el documento", "error");
-      return;
-    }
-
-    console.log({ test });
-    updatePatientTest(
-      {
-        id: test.patientTests[0].id,
-        dataToUpdate: {
-          documentId: document.id,
-        },
-      },
-      {
-        onSuccess: () => {
-          showAlert("Archivo actualizado correctamente", "success");
-        },
-      }
-    );
-
-    event.target.value = "";
-    setIsDataLoading(false);
-  };
-
-  const isForm = test.patientTests[0]?.submissionMode === "FORM" || !!test.formTemplate;
-
-  const handleOpenForm = async (readOnly: boolean) => {
-    setIsReadOnlyMode(readOnly);
-    let template = test.formTemplate;
-
-    if (!template) {
-      setIsDataLoading(true);
-      try {
-        const fetchedTemplate = await getFormTemplateByTestIdApi(test.id);
-        if (fetchedTemplate) {
-          template = fetchedTemplate;
-        }
-      } catch (err) {
-        console.error("Error al obtener la plantilla del formulario:", err);
-        showAlert("Esta prueba no tiene un formulario digital configurado.", "error");
-        setIsDataLoading(false);
-        return;
-      }
-      setIsDataLoading(false);
-    }
-
-    if (template) {
-      setFormTemplateData(template);
-      setIsFormFillerOpen(true);
-    }
-  };
-
-  const handleSaveFormAnswers = async (answers: Record<string, any>) => {
-    if (!formTemplateData) return;
-    setIsDataLoading(true);
-
-    try {
-      let patientTestId = test.patientTests[0]?.id;
-
-      if (!patientTestId) {
-        const newPatientTest = await createPatientTestApi({
-          testId: test.id,
-          clinicalHistoryId: clinicalHistory.id,
-          completedById: user?.id || "",
-          isGeneralDoc: false,
-          submissionMode: "FORM" as any,
-          documentId: "",
-        });
-
-        if (!newPatientTest) {
-          showAlert("Error al iniciar el registro de la prueba.", "error");
-          setIsDataLoading(false);
-          return;
-        }
-        patientTestId = newPatientTest.id;
-      }
-
-      if (test.patientTests[0]?.formSubmission) {
-        await updateFormSubmissionApi(
-          test.patientTests[0].formSubmission.id,
-          {
-            responseData: answers,
-            patientTestId,
-          }
-        );
-        showAlert("Respuestas del formulario actualizadas correctamente", "success");
-      } else {
-        await createFormSubmissionApi({
-          formTemplateId: formTemplateData.id,
-          responseData: answers,
-          completedById: user?.id || "",
-          patientTestId,
-        });
-        showAlert("Formulario guardado correctamente", "success");
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["clinical-history-sorted"] });
-      queryClient.invalidateQueries({ queryKey: ["clinical-history"] });
-    } catch (err) {
-      console.error("Error al guardar respuestas:", err);
-      showAlert("Error al guardar el formulario.", "error");
-    } finally {
-      setIsDataLoading(false);
-    }
   };
 
   return (
-    <div className="flex gap-2 ml-auto">
-      {isForm ? (
-        <>
-          {hasPatientTest && (
+    <div
+      style={{
+        border: "1px solid #e2e8f0",
+        borderRadius: "0.625rem",
+        overflow: "hidden",
+        backgroundColor: "#ffffff",
+      }}
+    >
+      {/* Header del test */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0.75rem 1rem",
+          cursor: "pointer",
+          backgroundColor: "#f8fafc",
+          borderBottom: isExpanded && applicationsCount > 0 ? "1px solid #e2e8f0" : "none",
+        }}
+        onClick={() => applicationsCount > 0 && setIsExpanded(!isExpanded)}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          {applicationsCount > 0 ? (
+            isExpanded ? (
+              <ChevronDown size={16} color="#64748b" />
+            ) : (
+              <ChevronRight size={16} color="#64748b" />
+            )
+          ) : (
+            <FileText size={16} color="#94a3b8" />
+          )}
+          <div>
+            <p style={{ fontWeight: 600, fontSize: "0.9rem", margin: 0, color: "#1e293b" }}>
+              {test.name}
+            </p>
+            <p style={{ fontSize: "0.72rem", color: "#64748b", margin: 0, marginTop: "1px" }}>
+              {applicationsCount === 0
+                ? "Sin aplicaciones registradas"
+                : applicationsCount === 1
+                ? "1 aplicación registrada"
+                : `${applicationsCount} aplicaciones registradas`}
+            </p>
+          </div>
+        </div>
+
+        {/* Botones de acción en el header */}
+        <div
+          style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Botón de plantilla descargable */}
+          {test.document?.fileUrl && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleOpenForm(true)}
+              onClick={() => window.open(test.document?.fileUrl, "_blank")}
+              style={{ fontSize: "0.75rem", height: "30px" }}
             >
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Ver Respuestas
+              <FileText size={13} style={{ marginRight: "4px" }} />
+              Plantilla
             </Button>
           )}
 
-          {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
-            <Button
-              size="sm"
-              variant="default"
-              className="bg-senses-primary text-white hover:bg-senses-primary/90"
-              onClick={() => handleOpenForm(false)}
-            >
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Llenar Formulario
-            </Button>
-          )}
-        </>
-      ) : (
-        <>
-          {hasPatientTest && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                window.open(test.patientTests[0].document?.fileUrl, "_blank")
-              }
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Descargar
-            </Button>
-          )}
-
-          {hasTemplate && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                window.open(test.document?.fileUrl, "_blank");
-              }}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Descargar Plantilla
-            </Button>
-          )}
-
-          {!hasPatientTest && roleSelected === "PSYCHOLOGIST" && (
+          {/* Botones de reporte PDF */}
+          {isForm && applicationsCount > 0 && (
             <>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
+              <PDFDownloadButton
+                testName={test.name}
+                patientTests={test.patientTests.filter(pt => pt.formSubmission)}
+                testId={test.id}
+                fieldsSchema={test.formTemplate?.fieldsSchema}
+                clinicalHistory={clinicalHistory}
+                label="Reporte completo"
+                variant="outline"
               />
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => handleUploadPatientTest()}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Subir Archivo
-              </Button>
+              <PDFDownloadButton
+                testName={test.name}
+                patientTests={[test.patientTests.find(pt => pt.formSubmission)!].filter(Boolean)}
+                testId={test.id}
+                fieldsSchema={test.formTemplate?.fieldsSchema}
+                clinicalHistory={clinicalHistory}
+                label="Generar último reporte"
+                variant="outline"
+              />
             </>
           )}
-        </>
+
+          {/* Botón para nueva aplicación (solo psicólogo y en cita) */}
+          {roleSelected === "PSYCHOLOGIST" && appointmentId && (
+            <>
+              {isForm ? (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={handleNewFormApplication}
+                  style={{
+                    fontSize: "0.75rem",
+                    height: "30px",
+                    backgroundColor: "#4f46e5",
+                    color: "white",
+                  }}
+                >
+                  <PlusCircle size={13} style={{ marginRight: "4px" }} />
+                  {appointmentId ? "Actualizar datos" : "Nueva aplicación"}
+                </Button>
+              ) : (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleNewFileApplication}
+                    className="hidden"
+                  />
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      fontSize: "0.75rem",
+                      height: "30px",
+                      backgroundColor: "#4f46e5",
+                      color: "white",
+                    }}
+                  >
+                    <Upload size={13} style={{ marginRight: "4px" }} />
+                    Subir archivo
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Lista cronológica de aplicaciones */}
+      {isExpanded && applicationsCount > 0 && (
+        <div
+          style={{
+            padding: "0.75rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.4rem",
+          }}
+        >
+          {(appointmentId ? test.patientTests.slice(0, 1) : test.patientTests).map((pt, idx) => (
+            <TestApplicationRow
+              key={pt.id}
+              patientTest={pt}
+              clinicalHistory={clinicalHistory}
+              onViewForm={handleViewForm}
+              index={idx}
+              total={applicationsCount}
+              test={test}
+            />
+          ))}
+        </div>
       )}
 
-      {isFormFillerOpen && formTemplateData && (
+      {/* Modal de formulario */}
+      {isFormFillerOpen && activeFormData && (
         <FormFillerModal
           isOpen={isFormFillerOpen}
           handleClose={() => {
             setIsFormFillerOpen(false);
-            setFormTemplateData(null);
+            setActiveFormData(null);
           }}
-          formTemplateName={formTemplateData.name}
-          fieldsSchema={formTemplateData.fieldsSchema}
-          existingResponseData={test.patientTests[0]?.formSubmission?.responseData}
-          isReadOnly={isReadOnlyMode}
-          onSave={handleSaveFormAnswers}
+          formTemplateName={activeFormData.formTemplateName}
+          fieldsSchema={activeFormData.fieldsSchema}
+          existingResponseData={activeFormData.responseData}
+          isReadOnly={activeFormData.isReadOnly}
+          patientDni={clinicalHistory.patient?.dni}
+          onSave={handleSaveNewFormApplication}
         />
       )}
     </div>
   );
 };
+
+// ─── Subcomponente: documentos generales (sección default) ───────────────────
 
 const DocumentLink = ({ name, url }: { name: string; url: string }) => (
   <a
@@ -350,51 +580,6 @@ const DocumentLink = ({ name, url }: { name: string; url: string }) => (
     <span className="text-sm">{name}</span>
   </a>
 );
-
-const CustomSectionContent = ({
-  evaluation,
-  clinicalHistory,
-  setIsDataLoading,
-}: {
-  evaluation: Evaluation;
-  clinicalHistory: ClinicalHistory;
-  setIsDataLoading: (isLoading: boolean) => void;
-}) => {
-  return (
-    <div className="flex flex-col gap-2">
-      {evaluation.tests.map((test) => {
-        const hasPatientTest = test.patientTests.length > 0;
-
-        return (
-          <div
-            key={test.id}
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">{test.name}</p>
-                {hasPatientTest && (
-                  <p className="text-xs text-muted-foreground">
-                    {test.patientTests[0].submissionMode === "FORM"
-                      ? "Respuestas registradas (Formulario digital)"
-                      : test.patientTests[0].document?.name}
-                  </p>
-                )}
-              </div>
-            </div>
-            <TestActions
-              test={test}
-              hasPatientTest={hasPatientTest}
-              clinicalHistory={clinicalHistory}
-              setIsDataLoading={setIsDataLoading}
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 const DefaultSectionContent = ({ evaluation }: { evaluation: Evaluation }) => {
   const testsWithDocuments = evaluation.tests.filter(
@@ -413,12 +598,12 @@ const DefaultSectionContent = ({ evaluation }: { evaluation: Evaluation }) => {
     <div className="flex flex-col gap-1">
       {testsWithDocuments.map((test) =>
         test.patientTests.map((patientTest) => {
-          if (!patientTest.document) return;
+          if (!patientTest.document) return null;
           return (
             <DocumentLink
               key={patientTest.id}
               name={test.name}
-              url={patientTest.document.fileUrl}
+              url={patientTest.document.fileUrl!}
             />
           );
         })
@@ -427,16 +612,48 @@ const DefaultSectionContent = ({ evaluation }: { evaluation: Evaluation }) => {
   );
 };
 
+// ─── Subcomponente: contenido de sección custom con historial ────────────────
+
+const CustomSectionContent = ({
+  evaluation,
+  clinicalHistory,
+  setIsDataLoading,
+  appointmentId,
+}: {
+  evaluation: Evaluation;
+  clinicalHistory: ClinicalHistory;
+  setIsDataLoading: (v: boolean) => void;
+  appointmentId?: string;
+}) => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {evaluation.tests.map((test) => (
+        <TestHistoryCard
+          key={test.id}
+          test={test}
+          clinicalHistory={clinicalHistory}
+          setIsDataLoading={setIsDataLoading}
+          appointmentId={appointmentId}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ─── EvaluationAccordion ─────────────────────────────────────────────────────
+
 const EvaluationAccordion = ({
   evaluation,
   isCustomSection,
   clinicalHistory,
   setIsDataLoading,
+  appointmentId,
 }: {
   evaluation: Evaluation;
   isCustomSection: boolean;
   clinicalHistory: ClinicalHistory;
-  setIsDataLoading: (isLoading: boolean) => void;
+  setIsDataLoading: (v: boolean) => void;
+  appointmentId?: string;
 }) => {
   return (
     <AccordionItem value={evaluation.id}>
@@ -456,6 +673,7 @@ const EvaluationAccordion = ({
             evaluation={evaluation}
             clinicalHistory={clinicalHistory}
             setIsDataLoading={setIsDataLoading}
+            appointmentId={appointmentId}
           />
         ) : (
           <DefaultSectionContent evaluation={evaluation} />
@@ -465,68 +683,58 @@ const EvaluationAccordion = ({
   );
 };
 
+// ─── SectionCard ─────────────────────────────────────────────────────────────
+
 const SectionCard = ({
   section,
   clinicalHistory,
   setIsDataLoading,
+  appointmentId,
 }: {
   section: Section;
   clinicalHistory: ClinicalHistory;
-  setIsDataLoading: (isLoading: boolean) => void;
+  setIsDataLoading: (v: boolean) => void;
+  appointmentId?: string;
 }) => {
   const isCustomSection = !section.isDefault;
 
-  // Para secciones custom, mostrar directamente el contenido sin accordion adicional
-  if (isCustomSection && section.evaluations.length === 1) {
-    const evaluation = section.evaluations[0];
-
-    return (
-      <div className="border rounded-lg p-4 space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">{section.name}</h3>
-          {evaluation.description && (
-            <p className="text-sm text-muted-foreground">
-              {evaluation.description}
-            </p>
-          )}
-        </div>
-        <CustomSectionContent
-          evaluation={evaluation}
-          clinicalHistory={clinicalHistory}
-          setIsDataLoading={setIsDataLoading}
-        />
-      </div>
-    );
-  }
-
-  // Para secciones default o custom con múltiples evaluaciones
   return (
-    <div className="border rounded-lg p-4 space-y-2">
-      <h3 className="text-lg font-semibold mb-2">{section.name}</h3>
-      <Accordion type="multiple" className="w-full">
-        {section.evaluations.map((evaluation) => (
-          <EvaluationAccordion
-            key={evaluation.id}
-            evaluation={evaluation}
-            isCustomSection={isCustomSection}
-            clinicalHistory={clinicalHistory}
-            setIsDataLoading={setIsDataLoading}
-          />
-        ))}
-      </Accordion>
-    </div>
+    <Accordion type="multiple" className="w-full mb-4">
+      <AccordionItem value={section.id} className="border rounded-lg bg-white overflow-hidden">
+        <AccordionTrigger className="px-4 py-3 hover:no-underline border-b">
+          <h3 className="text-lg font-semibold m-0">{section.name}</h3>
+        </AccordionTrigger>
+        <AccordionContent className="p-4 bg-slate-50/50">
+          <Accordion type="multiple" className="w-full">
+            {section.evaluations.map((evaluation) => (
+              <EvaluationAccordion
+                key={evaluation.id}
+                evaluation={evaluation}
+                isCustomSection={isCustomSection}
+                clinicalHistory={clinicalHistory}
+                setIsDataLoading={setIsDataLoading}
+                appointmentId={appointmentId}
+              />
+            ))}
+          </Accordion>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 };
 
-// Main Component
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export const ClinicalHistorySections = ({
   sections,
   isLoading,
   clinicalHistory,
+  appointmentId,
 }: {
   sections: Section[] | undefined;
   isLoading: boolean;
   clinicalHistory: ClinicalHistory;
+  appointmentId?: string;
 }) => {
   const { Spinner, loading, setLoading } = useSpinner({
     initialLoading: isLoading,
@@ -551,11 +759,10 @@ export const ClinicalHistorySections = ({
     );
   }
 
-  // Ordenar secciones por order
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
   return (
-    <div className=" w-full">
+    <div className="w-full">
       <div className="space-y-4">
         {sortedSections.map((section) => (
           <SectionCard
@@ -563,6 +770,7 @@ export const ClinicalHistorySections = ({
             section={section}
             clinicalHistory={clinicalHistory}
             setIsDataLoading={setLoading}
+            appointmentId={appointmentId}
           />
         ))}
       </div>

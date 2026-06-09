@@ -33,6 +33,8 @@ import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorag
 import { getFormTemplateByTestIdApi } from "@/features/evaluations/api/formTemplatesApi";
 import { createFormSubmissionApi, updateFormSubmissionApi } from "@/features/evaluations/api/formSubmissionsApi";
 import { FormFillerModal } from "../components/FormFillerModal";
+import { getAllEvaluationsByClinicalHistoryIdSortedBySectionApi } from "@/features/clinical-histories/api/clinicalHistoriesApi";
+import { ClinicalHistorySections } from "@/features/clinical-histories/components/ClinicalHistorySections ";
 
 export const MyAppointmentInformation = () => {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ export const MyAppointmentInformation = () => {
   const [isAddEvaluationModalOpen, setIsAddEvaluationModalOpen] =
     useState(false);
   const [isAddTestModalOpen, setIsAddTestModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"session" | "history">("session");
   const { user } = useAuth();
   const { showAlert } = useAlert();
 
@@ -80,6 +83,7 @@ export const MyAppointmentInformation = () => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [evaluations, setEvaluations] = useState<AppointmentEvaluations[]>([]);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<string>("");
+  const [clinicalHistorySections, setClinicalHistorySections] = useState<any[]>([]);
 
   // Dynamic form state
   const [isFormFillerOpen, setIsFormFillerOpen] = useState(false);
@@ -90,24 +94,36 @@ export const MyAppointmentInformation = () => {
     formTemplateName: string;
     fieldsSchema: any[];
     existingSubmission: any;
+    prefilledResponseData?: any;
   } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
-      const patient = await queryClient.fetchQuery<Patient>({
-        queryKey: ["appointmentPatientInformation", id],
-        queryFn: () => getPatientByAppointmentIdApi(id),
-      });
-      setPatient(patient);
+      try {
+        const patient = await queryClient.fetchQuery<Patient>({
+          queryKey: ["appointmentPatientInformation", id],
+          queryFn: () => getPatientByAppointmentIdApi(id),
+        });
+        setPatient(patient);
 
-      const evaluations = await queryClient.fetchQuery<
-        AppointmentEvaluations[]
-      >({
-        queryKey: ["appointmentPatientTests", id],
-        queryFn: () => getPatientTestsByAppointmentIdApi(id),
-      });
-      setEvaluations(evaluations);
+        const evaluations = await queryClient.fetchQuery<
+          AppointmentEvaluations[]
+        >({
+          queryKey: ["appointmentPatientTests", id],
+          queryFn: () => getPatientTestsByAppointmentIdApi(id),
+        });
+        setEvaluations(evaluations);
+
+        if (patient?.clinicalHistoryId) {
+          const historySections = await getAllEvaluationsByClinicalHistoryIdSortedBySectionApi(
+            patient.clinicalHistoryId
+          );
+          setClinicalHistorySections(historySections);
+        }
+      } catch (err) {
+        console.error("Error al obtener datos del paciente o cita:", err);
+      }
     };
 
     fetchData();
@@ -289,6 +305,35 @@ export const MyAppointmentInformation = () => {
       }
     }
 
+    // Buscar respuestas previas en el historial de la historia clínica
+    let prefilledResponseData = undefined;
+    if (!params.existingSubmission && patient?.clinicalHistoryId) {
+      let foundPreviousSubmission: any = null;
+
+      for (const section of clinicalHistorySections) {
+        for (const evaluation of section.evaluations || []) {
+          for (const test of evaluation.tests || []) {
+            if (test.id === params.templateTestId) {
+              // Los patientTests ya vienen ordenados por completedAt desc (más reciente primero)
+              const lastSubmissionTest = test.patientTests?.find(
+                (pt: any) => pt.submissionMode === "FORM" && pt.formSubmission?.responseData
+              );
+              if (lastSubmissionTest) {
+                foundPreviousSubmission = lastSubmissionTest.formSubmission;
+                break;
+              }
+            }
+          }
+          if (foundPreviousSubmission) break;
+        }
+        if (foundPreviousSubmission) break;
+      }
+
+      if (foundPreviousSubmission) {
+        prefilledResponseData = foundPreviousSubmission.responseData;
+      }
+    }
+
     setActiveFormFillerData({
       patientTestId: params.patientTestId,
       templateTestId: params.templateTestId,
@@ -296,6 +341,7 @@ export const MyAppointmentInformation = () => {
       formTemplateName,
       fieldsSchema,
       existingSubmission: params.existingSubmission,
+      prefilledResponseData,
     });
     setIsFormFillerOpen(true);
   };
@@ -452,35 +498,77 @@ export const MyAppointmentInformation = () => {
           </div>
           <div className="flex flex-col w-full items-center px-2 gap-3">
             <div className="w-full lg:w-8/10">
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={() => {
-                  setIsAddEvaluationModalOpen(true);
-                }}
-                className="cursor-pointer bg-senses-primary text-white hover:bg-senses-primary hover:text-white"
-              >
-                <PlusIcon />
-                <span className="hidden lg:inline">Agregar evaluación</span>
-              </Button>
-              <div className="w-full flex gap-3 flex-col mt-4">
-                {evaluations.length === 0 ? (
-                  <EmptyState title="Aún no se han agregado evaluaciones" />
-                ) : (
-                  evaluations.map((evaluation) => (
-                    <EvaluationSection
-                      key={evaluation.id}
-                      {...evaluation}
-                      openAddTestModal={() => {
-                        setIsAddTestModalOpen(true);
-                      }}
-                      onOverrideFile={onOverrideFile}
-                      setSelectedEvaluationId={setSelectedEvaluationId}
-                      handleCreatePatientTest={handleCreatePatientTest}
-                      onFillForm={onFillForm}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setIsAddEvaluationModalOpen(true);
+                  }}
+                  className="cursor-pointer bg-senses-primary text-white hover:bg-senses-primary hover:text-white"
+                >
+                  <PlusIcon />
+                  <span className="hidden lg:inline">Agregar evaluación</span>
+                </Button>
+              </div>
+              <div className="w-full mt-6">
+                <div className="flex border-b mb-4 gap-2">
+                  <button
+                    onClick={() => setActiveTab("session")}
+                    className={`px-4 py-2 font-medium text-sm transition-colors outline-none cursor-pointer ${
+                      activeTab === "session"
+                        ? "border-b-2 border-senses-primary text-senses-primary"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Evaluaciones de la sesión
+                  </button>
+                  {patient?.clinicalHistoryId && (
+                    <button
+                      onClick={() => setActiveTab("history")}
+                      className={`px-4 py-2 font-medium text-sm transition-colors outline-none cursor-pointer ${
+                        activeTab === "history"
+                          ? "border-b-2 border-senses-primary text-senses-primary"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Historial completo
+                    </button>
+                  )}
+                </div>
+
+                {activeTab === "session" && (
+                  <div className="w-full flex gap-3 flex-col">
+                    {evaluations.length > 0 ? (
+                      evaluations.map((evaluation) => (
+                        <EvaluationSection
+                          key={evaluation.id}
+                          {...evaluation}
+                          openAddTestModal={() => {
+                            setIsAddTestModalOpen(true);
+                          }}
+                          onOverrideFile={onOverrideFile}
+                          setSelectedEvaluationId={setSelectedEvaluationId}
+                          handleCreatePatientTest={handleCreatePatientTest}
+                          onFillForm={onFillForm}
+                        />
+                      ))
+                    ) : (
+                      <EmptyState title="Aún no se han agregado evaluaciones" />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "history" && patient?.clinicalHistoryId && (
+                  <div className="w-full flex gap-3 flex-col mt-2">
+                    <ClinicalHistorySections
+                      sections={clinicalHistorySections}
+                      isLoading={false}
+                      clinicalHistory={{ id: patient.clinicalHistoryId, patient } as any}
+                      appointmentId={id}
                     />
-                  ))
+                  </div>
                 )}
               </div>
             </div>
@@ -556,7 +644,10 @@ export const MyAppointmentInformation = () => {
           }}
           formTemplateName={activeFormFillerData.formTemplateName}
           fieldsSchema={activeFormFillerData.fieldsSchema}
-          existingResponseData={activeFormFillerData.existingSubmission?.responseData}
+          existingResponseData={
+            activeFormFillerData.existingSubmission?.responseData ||
+            activeFormFillerData.prefilledResponseData
+          }
           patientDni={patient?.dni}
           onSave={handleSaveFormAnswers}
         />

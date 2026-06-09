@@ -36,15 +36,22 @@ export const SelectRolePage = () => {
     if (accessToken && roleSelected) {
       navigate("/");
     }
-  }, [accessToken, navigate, roleSelected]);
+    if (isAuthBootstrapped && !accessToken) {
+      navigate("/auth", { replace: true });
+    }
+  }, [accessToken, navigate, roleSelected, isAuthBootstrapped]);
 
-  if (!isAuthBootstrapped || !user) {
+  if (!isAuthBootstrapped) {
     console.log("SelectRolePage - Showing spinner");
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-senses-primary"></div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // Will redirect via useEffect
   }
 
   const userRoles = (user?.roles ?? []).map((role) => ({
