@@ -381,6 +381,7 @@ export const getAllEvaluationsByClinicalHistoryIdSortedBySectionService =
               },
               select: {
                 id: true,
+                testId: true,
                 submissionMode: true,
                 completedAt: true,
                 completedBy: {

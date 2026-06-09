@@ -27,3 +27,30 @@ export const getUrlToDownload = async (
     next(error);
   }
 };
+
+import fs from "fs";
+import path from "path";
+
+export const localUpload = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const filePath = req.query.path as string;
+    if (!filePath) {
+      res.status(400).send("Path parameter is required");
+      return;
+    }
+
+    const fullDir = path.join(process.cwd(), "uploads", path.dirname(filePath));
+    fs.mkdirSync(fullDir, { recursive: true });
+
+    const fullPath = path.join(process.cwd(), "uploads", filePath);
+    fs.writeFileSync(fullPath, req.body);
+
+    res.status(200).send("File uploaded locally");
+  } catch (error) {
+    next(error);
+  }
+};

@@ -7,12 +7,19 @@ import { env } from "../common/config";
 const BUCKET_NAME = env.BUCKET_NAME;
 
 export const generateUrlService = async (data: GenerateUrlInput) => {
-  const storage = new Storage();
-  const bucket = storage.bucket(BUCKET_NAME);
   const { fileName, fileType, dni } = data;
   const sanitizedFileName = fileName.replace(/\s+/g, "-");
-
   const filePath = `users/${dni}/uploads/${Date.now()}-${sanitizedFileName}`;
+
+  if (env.nodeEnv !== "production" || env.BUCKET_NAME === "placeholder_bucket") {
+    return {
+      uploadUrl: `http://localhost:5000/api/v1/files/local-upload?path=${filePath}`,
+      filePath,
+    };
+  }
+
+  const storage = new Storage();
+  const bucket = storage.bucket(BUCKET_NAME);
   const file = bucket.file(filePath);
 
   const [url] = await file.getSignedUrl({
@@ -33,6 +40,11 @@ export const getUrlToDownloadService = async ({ fileId }: GetUrlInput) => {
   if (!fileDB || !fileDB.filePath) {
     throw new AppError("File not found in DataBase", 404);
   }
+
+  if (env.nodeEnv !== "production" || env.BUCKET_NAME === "placeholder_bucket") {
+    return { downloadUrl: `http://localhost:5000/uploads/${fileDB.filePath}` };
+  }
+
   const storage = new Storage();
   const bucket = storage.bucket(BUCKET_NAME);
 
