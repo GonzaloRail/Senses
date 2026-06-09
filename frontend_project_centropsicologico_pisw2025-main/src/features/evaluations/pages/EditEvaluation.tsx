@@ -22,27 +22,70 @@ import { useAuth } from "@/store/auth/auth.store";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
 import { createFormTemplateApi } from "../api/formTemplatesApi";
 
+const mapFieldToBackend = (q: any, idx: number): any => {
+  let type = q.type;
+  if (type === "number") type = "NUMBER";
+  else if (type === "checkbox") type = "CHECKBOX";
+  else if (type === "select") type = "SELECT";
+  else if (type === "text") type = "TEXT";
+
+  return {
+    id: q.id,
+    label: q.label,
+    type: type,
+    required: q.required || false,
+    order: q.order !== undefined ? q.order : idx,
+    options: q.options || undefined,
+    placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
+    helpText: q.helpText,
+    isClinicalHistory: q.isClinicalHistory,
+  };
+};
+
 const mapFormQuestionsToFieldsSchema = (questionsJsonStr: string) => {
   try {
-    const questions = JSON.parse(questionsJsonStr);
-    return questions.map((q: any, idx: number) => {
-      let type: "TEXT" | "TEXTAREA" | "NUMBER" | "DATE" | "SELECT" | "RADIO" | "CHECKBOX" | "SCALE" = "TEXTAREA";
-      if (q.type === "number") type = "NUMBER";
-      else if (q.type === "checkbox") type = "CHECKBOX";
-      else if (q.type === "select") type = "SELECT";
+    const parsed = JSON.parse(questionsJsonStr);
+    
+    // Retrocompatibilidad con esquemas planos
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type !== undefined) {
+      return [
+        {
+          id: "default_section",
+          title: "Información General",
+          order: 0,
+          fields: parsed.map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+          subsections: [],
+        },
+      ];
+    }
 
-      return {
-        label: q.label,
-        type: type,
-        required: q.required || false,
-        order: idx,
-        options: q.options || undefined,
-        placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
-      };
-    });
+    return parsed.map((sec: any, secIdx: number) => ({
+      id: sec.id,
+      title: sec.title || `Sección ${secIdx + 1}`,
+      order: sec.order !== undefined ? sec.order : secIdx,
+      fields: (sec.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      subsections: (sec.subsections || []).map((sub: any, subIdx: number) => ({
+        id: sub.id,
+        title: sub.title || `Subsección ${subIdx + 1}`,
+        order: sub.order !== undefined ? sub.order : subIdx,
+        fields: (sub.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      })),
+    }));
   } catch (e) {
     console.error("Error parsing templateContent", e);
     return [];
+  }
+};
+
+const mapFieldsSchemaToFormQuestions = (fieldsSchema: any): string => {
+  if (!fieldsSchema) return "[]";
+  try {
+    const list = Array.isArray(fieldsSchema) ? fieldsSchema : JSON.parse(fieldsSchema);
+    // Para el diseñador inline, mantenemos la estructura de secciones/subsecciones tal cual
+    return JSON.stringify(list);
+  } catch (e) {
+    console.error("Error parsing fieldsSchema", e);
+    return "[]";
   }
 };
 
@@ -55,6 +98,7 @@ export const EditEvaluation = () => {
   const [isAddTestModalOpen, setIsAddTestModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const { showAlert } = useAlert();
+  const [deactivatedTestIds, setDeactivatedTestIds] = useState<string[]>([]);
 
   const form = useForm<EvaluationFormSchema>({
     resolver: zodResolver(evaluationFormSchema),
@@ -84,13 +128,14 @@ export const EditEvaluation = () => {
       description: evaluationData.description,
       isActive: evaluationData.isActive,
       openNewSection: evaluationData.openNewSection,
-      psychologicalTests: evaluationData.tests?.map((test) => ({
+      psychologicalTests: evaluationData.tests?.map((test: any) => ({
         id: test.id,
         name: test.name,
         description: test.description,
-        filename: test.document?.name || "Documento sin nombre",
+        filename: test.document?.name || (test.formTemplate ? "Formulario digital" : "Documento sin nombre"),
         fileurl: test.document?.fileUrl || "",
         isNew: false,
+        templateContent: test.formTemplate ? mapFieldsSchemaToFormQuestions(test.formTemplate.fieldsSchema) : undefined,
       })),
     });
   }, [form, evaluationData]);
@@ -116,11 +161,8 @@ export const EditEvaluation = () => {
       currentTests.filter((_, i) => i !== index)
     );
 
-    if (!testToRemove.isNew) {
-      updateTestStatus({
-        id: testToRemove.id ? testToRemove.id : "",
-        isActive: false,
-      });
+    if (!testToRemove.isNew && testToRemove.id) {
+      setDeactivatedTestIds((prev) => [...prev, testToRemove.id!]);
     }
 
     showAlert("Prueba eliminada", "success");
@@ -138,7 +180,24 @@ export const EditEvaluation = () => {
 
     setLoading(true);
     try {
-      // 1. Actualizar la evaluación
+      // 1. Desactivar pruebas eliminadas en la base de datos
+      if (deactivatedTestIds.length > 0) {
+        await Promise.all(
+          deactivatedTestIds.map((testId) => {
+            return new Promise<void>((resolve, reject) => {
+              updateTestStatus(
+                { id: testId, isActive: false },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (err) => reject(err),
+                }
+              );
+            });
+          })
+        );
+      }
+
+      // 2. Actualizar la evaluación
       const updateData = {
         name: data.name || evaluationData.name,
         description: data.description || evaluationData.description,
@@ -157,7 +216,7 @@ export const EditEvaluation = () => {
         );
       });
 
-      // 2. Procesar nuevas pruebas
+      // 3. Procesar nuevas pruebas
       const newTests = data.psychologicalTests.filter((test) => test.isNew);
 
       if (newTests.length > 0) {
@@ -184,48 +243,53 @@ export const EditEvaluation = () => {
 
         console.log("Nuevos tests a crear en Base de Datos:", testsWithUrls);
 
-        createTestsBatch(
-          { testsToCreate: testsWithUrls },
-          {
-            onSuccess: async (batchResponse) => {
-              const createdTests = (batchResponse as any).tests || [];
-              
-              await Promise.all(
-                createdTests.map(async (createdTest: any) => {
-                  const originalTest = newTests.find(
-                    (t) => t.name === createdTest.name
-                  );
+        await new Promise<void>((resolve, reject) => {
+          createTestsBatch(
+            { testsToCreate: testsWithUrls },
+            {
+              onSuccess: async (batchResponse) => {
+                const createdTests = (batchResponse as any).tests || [];
+                
+                await Promise.all(
+                  createdTests.map(async (createdTest: any, index: number) => {
+                    const originalTest = newTests[index];
 
-                  if (originalTest && (originalTest as any).templateContent) {
-                    const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
-                    if (fieldsSchema.length > 0) {
-                      try {
-                        await createFormTemplateApi({
-                          formTemplate: {
-                            name: createdTest.name,
-                            description: createdTest.description || "",
-                            isDefault: false,
-                            fieldsSchema,
-                            createdById: user?.id || "",
-                            testId: createdTest.id,
-                          }
-                        });
-                      } catch (err) {
-                        console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                    if (originalTest && (originalTest as any).templateContent) {
+                      const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
+                      if (fieldsSchema.length > 0) {
+                        try {
+                          await createFormTemplateApi({
+                            formTemplate: {
+                              name: createdTest.name,
+                              description: createdTest.description || "",
+                              isDefault: false,
+                              fieldsSchema,
+                              createdById: user?.id || "",
+                              testId: createdTest.id,
+                            }
+                          });
+                        } catch (err) {
+                          console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                        }
                       }
                     }
-                  }
-                })
-              );
+                  })
+                );
 
-              console.log("Pruebas creadas exitosamente");
-              showAlert(
-                `Evaluación actualizada con ${testsWithUrls.length} nueva(s) prueba(s)`,
-                "success"
-              );
-            },
-          }
-        );
+                console.log("Pruebas creadas exitosamente");
+                showAlert(
+                  `Evaluación actualizada con ${testsWithUrls.length} nueva(s) prueba(s)`,
+                  "success"
+                );
+                resolve();
+              },
+              onError: (err) => {
+                console.error("Error al crear pruebas:", err);
+                reject(err);
+              }
+            }
+          );
+        });
       } else {
         showAlert("Evaluación actualizada correctamente", "success");
       }

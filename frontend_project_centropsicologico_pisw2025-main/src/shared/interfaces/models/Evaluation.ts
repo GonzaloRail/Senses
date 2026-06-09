@@ -62,6 +62,16 @@ export interface AppointmentTest {
   uploadedFileName?: string;
   uploadedFileUrl?: string;
   uploadedFile?: File;
+  submissionMode?: "DOCUMENT" | "FORM";
+  formTemplate?: {
+    id: string;
+    name: string;
+    fieldsSchema: any;
+  } | null;
+  formSubmission?: {
+    id: string;
+    responseData: any;
+  } | null;
 }
 
 export interface EvaluationOption {

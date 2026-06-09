@@ -266,9 +266,22 @@ export const getPatientTestsByAppointmentIdService = async ({
             include: {
               evaluation: true,
               document: true,
+              formTemplate: {
+                select: {
+                  id: true,
+                  name: true,
+                  fieldsSchema: true,
+                },
+              },
             },
           },
           document: true,
+          formSubmission: {
+            select: {
+              id: true,
+              responseData: true,
+            },
+          },
         },
       },
     },
@@ -306,10 +319,13 @@ export const getPatientTestsByAppointmentIdService = async ({
         id: patientTest.id,
         testId: patientTest.testId,
         name: patientTest.test.name,
+        submissionMode: patientTest.submissionMode,
         documentId: patientTest.document?.id,
         templateUrl,
         uploadedFileName: patientTest.document?.name,
         uploadedFileUrl,
+        formTemplate: patientTest.test.formTemplate ?? null,
+        formSubmission: patientTest.formSubmission ?? null,
       });
     })
   );

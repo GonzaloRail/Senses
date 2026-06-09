@@ -17,7 +17,22 @@ export interface PatientTest {
   isGeneralDoc: boolean;
 
   completedById: string;
-  completedBy: User;
+  completedBy: {
+    id?: string;
+    firstName: string;
+    lastName: string;
+  };
 
-  completedAt: Date;
+  completedAt: string | Date;
+
+  /** Cita en la que se aplicó este test (si aplica) */
+  appointment?: {
+    startDate: string | Date;
+  } | null;
+
+  submissionMode?: "DOCUMENT" | "FORM";
+  formSubmission?: {
+    id: string;
+    responseData: any;
+  } | null;
 }
