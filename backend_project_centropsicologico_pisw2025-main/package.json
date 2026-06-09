@@ -10,9 +10,10 @@
     "db:deploy": "npx prisma migrate deploy && npx prisma generate",
     "dev": "nodemon --exec tsx server.ts",
     "seed": "tsx src/seed/seed.ts",
+    "seed-patient-intake": "tsx src/seed/seed-patient-intake.ts",
     "seed-regions": "tsx src/seed/seed-regions.ts",
     "seed-database": "tsx src/seed/seed-database.ts",
-    "prisma:deploy:render": "npx prisma migrate deploy && prisma generate && npm run seed-regions && npm run seed-database",
+    "prisma:deploy:render": "npx prisma migrate deploy && prisma generate && npm run seed-regions && npm run seed-database && npm run seed-patient-intake",
     "build:prod:render": "npm install && tsc && npm run prisma:deploy:render"
   },
   "repository": {
