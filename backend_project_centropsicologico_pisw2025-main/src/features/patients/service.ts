@@ -677,6 +677,120 @@ type PatientIntakeInput =
 
 type PatientIntakeSelectionInput = NonNullable<PatientIntakeInput["selections"]>[number];
 
+type IntakeSelectionWithCatalog = Prisma.PatientIntakeSelectionGetPayload<{
+  include: {
+    intakeOption: {
+      include: {
+        group: true;
+      };
+    };
+  };
+}>;
+
+type PatientIntakeInfoWithCatalog = Prisma.PatientIntakeInfoGetPayload<{
+  include: {
+    incomeRange: true;
+    selections: {
+      include: {
+        intakeOption: {
+          include: {
+            group: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+type PatientWithIntakeInfo = {
+  intakeInfo: PatientIntakeInfoWithCatalog | null;
+};
+
+type IntakeSelectionGroupResponse = {
+  groupId: string;
+  groupCode: string;
+  groupName: string;
+  selectionType: string;
+  selectedOptions: {
+    intakeOptionId: string;
+    code: string;
+    name: string;
+    category: string | null;
+    sortOrder: number;
+    isPrimary: boolean;
+    notes: string | null;
+    selectedAt: Date;
+  }[];
+};
+
+const sortIntakeSelectionsByCatalog = (
+  left: IntakeSelectionWithCatalog,
+  right: IntakeSelectionWithCatalog
+) => {
+  const groupCompare = left.intakeOption.group.code.localeCompare(
+    right.intakeOption.group.code
+  );
+
+  if (groupCompare !== 0) {
+    return groupCompare;
+  }
+
+  return left.intakeOption.sortOrder - right.intakeOption.sortOrder;
+};
+
+const groupIntakeSelectionsByCatalog = (
+  selections: IntakeSelectionWithCatalog[]
+) => {
+  const groups: Record<string, IntakeSelectionGroupResponse> = {};
+
+  for (const selection of [...selections].sort(sortIntakeSelectionsByCatalog)) {
+    const { group } = selection.intakeOption;
+
+    if (!groups[group.code]) {
+      groups[group.code] = {
+        groupId: group.id,
+        groupCode: group.code,
+        groupName: group.name,
+        selectionType: group.selectionType,
+        selectedOptions: [],
+      };
+    }
+
+    groups[group.code].selectedOptions.push({
+      intakeOptionId: selection.intakeOptionId,
+      code: selection.intakeOption.code,
+      name: selection.intakeOption.name,
+      category: selection.intakeOption.category,
+      sortOrder: selection.intakeOption.sortOrder,
+      isPrimary: selection.isPrimary,
+      notes: selection.notes,
+      selectedAt: selection.createdAt,
+    });
+  }
+
+  return groups;
+};
+
+const formatPatientIntakeInfo = (
+  intakeInfo: PatientIntakeInfoWithCatalog | null
+) => {
+  if (!intakeInfo) {
+    return null;
+  }
+
+  const { selections, ...restIntakeInfo } = intakeInfo;
+
+  return {
+    ...restIntakeInfo,
+    selectionsByGroup: groupIntakeSelectionsByCatalog(selections),
+  };
+};
+
+const formatPatientResponse = <T extends PatientWithIntakeInfo>(patient: T) => ({
+  ...patient,
+  intakeInfo: formatPatientIntakeInfo(patient.intakeInfo),
+});
+
 const validatePatientIntakeSelections = async (
   tx: Prisma.TransactionClient,
   selections?: PatientIntakeInput["selections"]
@@ -1033,7 +1147,8 @@ export const getPatientByIdService = async ({ id }: GetPatientByIdInput) => {
   if (!patient) {
     throw new AppError("Paciente no encontrado", 404);
   }
-  return patient;
+
+  return formatPatientResponse(patient);
 };
 
 export const getPatientByAppointmentIdService = async ({
@@ -1094,10 +1209,16 @@ export const createPatientService = async (data: CreatePatientInput) => {
         await replacePatientConsents(tx, patient.id, consents);
       }
 
-      return tx.patient.findUnique({
+      const createdPatient = await tx.patient.findUnique({
         where: { id: patient.id },
         include: includeCreatedPatient,
       });
+
+      if (!createdPatient) {
+        throw new AppError("Error obteniendo el paciente creado", 500);
+      }
+
+      return formatPatientResponse(createdPatient);
     });
 
     return patientCreated;
@@ -1169,13 +1290,19 @@ export const updatePatientService = async (data: UpdatePatientInput) => {
       await replacePatientConsents(tx, id, consents);
     }
 
-    return tx.patient.findUnique({
+    const updatedPatient = await tx.patient.findUnique({
       where: { id },
       include: {
         district: { select: { name: true } },
         ...includeCreatedPatient,
       },
     });
+
+    if (!updatedPatient) {
+      throw new AppError("Error obteniendo el paciente actualizado", 500);
+    }
+
+    return formatPatientResponse(updatedPatient);
   });
 
   return updatedPatient;
