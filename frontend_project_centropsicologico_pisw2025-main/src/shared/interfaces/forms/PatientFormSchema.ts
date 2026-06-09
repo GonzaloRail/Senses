@@ -3,7 +3,10 @@ import { z } from "zod";
 export const patientFormSchema = z.object({
   firstName: z.string().min(1, "El nombre es obligatorio"),
   lastName: z.string().min(1, "El apellido es obligatorio"),
-  dni: z.string().min(8, "El DNI debe tener 8 caracteres"),
+  dni: z
+    .string()
+    .length(8, "El DNI debe tener 8 caracteres")
+    .regex(/^\d+$/, "El DNI debe contener solo numeros"),
   gender: z.string().min(1, "El género es obligatorio"),
   birthdate: z
     .string()
@@ -25,17 +28,62 @@ export const patientFormSchema = z.object({
   maritalStatus: z.string().min(1, "El estado civil es obligatorio"),
   religion: z.string().optional(),
   occupationLocation: z.string().min(1, "El lugar de trabajo es obligatorio"),
-  phoneNumber: z.string().min(6, "El teléfono es obligatorio"),
+  phoneNumber: z
+    .string()
+    .length(9, "El telefono debe tener 9 caracteres")
+    .regex(/^\d+$/, "El telefono debe contener solo numeros"),
   isActive: z.boolean().optional(),
   address: z.string().min(1, "La dirección es obligatoria"),
 
   parentFullName: z.coerce.string().optional(),
-  parentDni: z.coerce.string().optional(),
-  parentPhoneNumber: z.coerce.string().optional(),
+  parentDni: z
+    .union([
+      z
+        .string()
+        .length(8, "El DNI del apoderado debe tener 8 caracteres")
+        .regex(/^\d+$/, "El DNI del apoderado debe contener solo numeros"),
+      z.literal(""),
+    ])
+    .optional(),
+  parentPhoneNumber: z
+    .union([
+      z
+        .string()
+        .length(9, "El telefono del apoderado debe tener 9 caracteres")
+        .regex(/^\d+$/, "El telefono del apoderado debe contener solo numeros"),
+      z.literal(""),
+    ])
+    .optional(),
 
   districtId: z.string().min(1, "El distrito es obligatorio"),
   provinceId: z.string().min(1, "La provincia es obligatoria"),
   regionId: z.string().min(1, "El departamento es obligatorio"),
+
+  livesWith: z.string().optional(),
+  numChildren: z.string().optional(),
+  guardianName: z.string().optional(),
+  guardianPhone: z.string().optional(),
+  mainReason: z.string().optional(),
+  howLong: z.string().optional(),
+  previousTherapy: z.string().optional(),
+  psychiatricMedication: z.string().optional(),
+  urgencyLevel: z.string().optional(),
+  preferredModality: z.string().optional(),
+  preferredSchedule: z.string().optional(),
+  requiredSpecialty: z.string().optional(),
+  preferredContact: z.string().optional(),
+  howFoundUs: z.string().optional(),
+  whoReferred: z.string().optional(),
+  whatAttractedAttention: z.string().optional(),
+  comparedOtherCenters: z.string().optional(),
+  acceptPromotions: z.string().optional(),
+  employmentStatus: z.string().optional(),
+  workSector: z.string().optional(),
+  workMode: z.string().optional(),
+  incomeRange: z.string().optional(),
+  paymentMethods: z.string().optional(),
+  acceptDataPolicy: z.boolean().optional(),
+  acceptCommunications: z.boolean().optional(),
 })
   .superRefine((data, ctx) => {
     if (data.parentDni && data.dni === data.parentDni) {

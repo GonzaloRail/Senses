@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { AppError } from "../../common/utils";
 import { PatientMinimal } from "../../interfaces";
 import prisma from "../../lib/prisma";
@@ -1225,6 +1225,25 @@ export const createPatientService = async (data: CreatePatientInput) => {
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
+    }
+
+    console.error("Error original creando paciente:", error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new AppError("Ya existe un paciente con ese DNI", 400);
+      }
+
+      if (error.code === "P2003") {
+        throw new AppError(
+          "No existe el distrito o psicologo asociado al paciente",
+          400
+        );
+      }
+
+      if (error.code === "P2025") {
+        throw new AppError("No se encontro un registro relacionado", 400);
+      }
     }
 
     throw new AppError("Error creando el paciente", 400);
