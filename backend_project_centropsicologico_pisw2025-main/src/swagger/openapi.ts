@@ -1,5 +1,6 @@
 import { authDocs } from "../auth/docs";
 import { patientsDocs } from "../features/patients/docs";
+import { patientIntakeCatalogDocs } from "../features/patientIntakeCatalog/docs";
 import {
   buildPaths,
   dateTimeSchema,
@@ -14,6 +15,7 @@ import {
 const docs: SwaggerModuleDoc[] = [
   authDocs,
   patientsDocs,
+  patientIntakeCatalogDocs,
 ];
 
 const endpoints = docs.flatMap((doc) => doc.endpoints);

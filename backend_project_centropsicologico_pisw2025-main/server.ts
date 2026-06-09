@@ -33,6 +33,7 @@ import { StorageRouter } from "./src/cloudStorage";
 import { setupSwagger } from "./src/swagger";
 import { FormTemplateRouter } from "./src/features/formTemplates";
 import { FormSubmissionRouter } from "./src/features/formSubmissions";
+import { PatientIntakeCatalogRouter } from "./src/features/patientIntakeCatalog";
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use("/api/v1", DashboardRouter);
 app.use("/api/v1", StorageRouter);
 app.use("/api/v1", FormTemplateRouter);
 app.use("/api/v1", FormSubmissionRouter);
+app.use("/api/v1", PatientIntakeCatalogRouter);
 
 app.use(errorHandler);
 
