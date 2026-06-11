@@ -83,9 +83,12 @@ export const getPsychologistByName = async (
   next: NextFunction
 ) => {
   try {
-    const { searchQuery } = req.query;
+    const { searchQuery, dni, firstname, lastname } = req.query;
     const result = await getPsychologistsByNameService({
-      searchQuery: String(searchQuery),
+      searchQuery: searchQuery ? String(searchQuery) : undefined,
+      dni: dni ? String(dni) : undefined,
+      firstname: firstname ? String(firstname) : undefined,
+      lastname: lastname ? String(lastname) : undefined,
     });
     res.status(200).json(result);
   } catch (error) {

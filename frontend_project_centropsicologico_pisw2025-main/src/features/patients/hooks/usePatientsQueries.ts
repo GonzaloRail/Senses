@@ -33,16 +33,17 @@ export const usePatientByIdQuery = ({ id }: PatientByIdQuery) => {
 
 export const usePatientSearchQuery = () => {
   const [searchDni, setDniQuery] = useState<string>("");
-  const [searchName, setNameQuery] = useState<string>("");
+  const [searchFirstname, setFirstnameQuery] = useState<string>("");
+  const [searchLastname, setLastnameQuery] = useState<string>("");
 
   const {
     data: patients = [],
     isLoading,
     error,
   } = useQuery<PatientMinimal[]>({
-    queryKey: ["patients", searchName, searchDni],
-    queryFn: () => searchPatientsByDniOrName(searchDni, searchName),
-    enabled: searchDni.trim().length > 0 || searchName.trim().length > 0,
+    queryKey: ["patients", searchDni, searchFirstname, searchLastname],
+    queryFn: () => searchPatientsByDniOrName(searchDni, searchFirstname, searchLastname),
+    enabled: searchDni.trim().length > 0 || searchFirstname.trim().length > 0 || searchLastname.trim().length > 0,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -51,6 +52,7 @@ export const usePatientSearchQuery = () => {
     isLoading,
     error,
     setDniQuery,
-    setNameQuery,
+    setFirstnameQuery,
+    setLastnameQuery,
   };
 };

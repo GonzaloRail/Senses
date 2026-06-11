@@ -1,6 +1,16 @@
 import type { UseFormReturn } from "react-hook-form";
-import { Edit, Save, X, Calendar } from "lucide-react";
+import { Edit, Save, X, Calendar, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SearchableSelect } from "@/shared/components/SearchableSelect";
 import { SiteHeader } from "@/shared/components/SiteHeader";
 import type { AppointmentFormSchema } from "@/shared/interfaces/forms/AppointmentFormSchema";
@@ -23,8 +33,12 @@ export interface BaseFormProps {
   loading: boolean;
 
   // Search handlers
-  onPatientSearch: (query: string) => void;
-  onPsychologistSearch: (query: string) => void;
+  onPatientSearch?: (query: string) => void;
+  onPatientDniSearch?: (dni: string) => void;
+  onPatientNameSearch?: (firstname: string, lastname: string) => void;
+  onPsychologistSearch?: (query: string) => void;
+  onPsychologistDniSearch?: (dni: string) => void;
+  onPsychologistNameSearch?: (firstname: string, lastname: string) => void;
   onOfficeSearch: (query: string) => void;
 
   // Date/Time handlers for psychologist search
@@ -54,7 +68,11 @@ export const AppointmentBaseForm = ({
   onDisable,
   loading,
   onPatientSearch,
+  onPatientDniSearch,
+  onPatientNameSearch,
   onPsychologistSearch,
+  onPsychologistDniSearch,
+  onPsychologistNameSearch,
   onOfficeSearch,
   onPsychologistDateChange,
   onPsychologistStartTimeChange,
@@ -68,6 +86,78 @@ export const AppointmentBaseForm = ({
   officeSearchLoading = false,
   appointmentStatus,
 }: BaseFormProps) => {
+  const [patientSearchType, setPatientSearchType] = useState<"DNI" | "NAME">("NAME");
+  const [psychologistSearchType, setPsychologistSearchType] = useState<"DNI" | "NAME">("NAME");
+
+  // Patient 2-field NAME search state
+  const [patientFirstname, setPatientFirstname] = useState("");
+  const [patientLastname, setPatientLastname] = useState("");
+  const [patientDropdownOpen, setPatientDropdownOpen] = useState(false);
+  const [selectedPatientLabel, setSelectedPatientLabel] = useState("");
+  const patientSearchRef = useRef<HTMLDivElement>(null);
+
+  // Psychologist 2-field NAME search state
+  const [psychologistFirstname, setPsychologistFirstname] = useState("");
+  const [psychologistLastname, setPsychologistLastname] = useState("");
+  const [psychologistDropdownOpen, setPsychologistDropdownOpen] = useState(false);
+  const [selectedPsychologistLabel, setSelectedPsychologistLabel] = useState("");
+  const psychologistSearchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (patientSearchRef.current && !patientSearchRef.current.contains(e.target as Node)) {
+        setPatientDropdownOpen(false);
+      }
+      if (psychologistSearchRef.current && !psychologistSearchRef.current.contains(e.target as Node)) {
+        setPsychologistDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Debounced patient NAME search
+  useEffect(() => {
+    if (patientSearchType !== "NAME") return;
+    const timer = setTimeout(() => {
+      if (patientFirstname.trim() || patientLastname.trim()) {
+        onPatientNameSearch?.(patientFirstname.trim(), patientLastname.trim());
+        setPatientDropdownOpen(true);
+      } else {
+        setPatientDropdownOpen(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [patientFirstname, patientLastname, patientSearchType, onPatientNameSearch]);
+
+  // Debounced psychologist NAME search
+  useEffect(() => {
+    if (psychologistSearchType !== "NAME") return;
+    const timer = setTimeout(() => {
+      if (psychologistFirstname.trim() || psychologistLastname.trim()) {
+        onPsychologistNameSearch?.(psychologistFirstname.trim(), psychologistLastname.trim());
+        setPsychologistDropdownOpen(true);
+      } else {
+        setPsychologistDropdownOpen(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [psychologistFirstname, psychologistLastname, psychologistSearchType, onPsychologistNameSearch]);
+
+  // Reset inputs when search type changes
+  useEffect(() => {
+    setPatientFirstname("");
+    setPatientLastname("");
+    setPatientDropdownOpen(false);
+  }, [patientSearchType]);
+
+  useEffect(() => {
+    setPsychologistFirstname("");
+    setPsychologistLastname("");
+    setPsychologistDropdownOpen(false);
+  }, [psychologistSearchType]);
+
   const {
     handleSubmit,
     watch,
@@ -97,44 +187,188 @@ export const AppointmentBaseForm = ({
         <div className="flex flex-col p-2 gap-5 flex-1">
           <div className="flex flex-col p-2 md:p-6 items-center gap-4">
             {/* Búsqueda de Paciente */}
-            <SearchableSelect
-              id="patientId"
-              label="Paciente"
-              placeholder="Buscar paciente por DNI..."
-              value={watch("patientId")}
-              onValueChange={(value) => setValue("patientId", value)}
-              onSearch={onPatientSearch}
-              options={patientOptions.map((patient) => ({
-                value: patient.id,
-                label: patient.dni
-                  ? `${patient.name} - ${patient.dni}`
-                  : patient.name,
-              }))}
-              loading={patientSearchLoading}
-              readOnly={isViewMode || mode === "edit"}
-              helper="Busque y seleccione el paciente para la cita"
-              error={errors.patientId?.message}
-            />
+            {!isViewMode && mode !== "edit" && (
+              <div className="grid gap-2 my-2 w-full max-w-md">
+                <Select
+                  value={patientSearchType}
+                  onValueChange={(v) => setPatientSearchType(v as "DNI" | "NAME")}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NAME">Buscar paciente por Nombre</SelectItem>
+                    <SelectItem value="DNI">Buscar paciente por DNI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {!isViewMode && mode !== "edit" && patientSearchType === "NAME" ? (
+              <div className="grid gap-2 my-2 w-full max-w-md" ref={patientSearchRef}>
+                <Label className="font-normal">Paciente</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nombre"
+                    value={patientFirstname}
+                    onChange={(e) => setPatientFirstname(e.target.value)}
+                    maxLength={40}
+                  />
+                  <Input
+                    placeholder="Apellido"
+                    value={patientLastname}
+                    onChange={(e) => setPatientLastname(e.target.value)}
+                    maxLength={40}
+                  />
+                </div>
+                {patientDropdownOpen && (
+                  <div className="relative">
+                    <div className="absolute top-0 left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {patientSearchLoading ? (
+                        <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                        </div>
+                      ) : patientOptions.length > 0 ? (
+                        patientOptions.map((patient) => (
+                          <div
+                            key={patient.id}
+                            className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setValue("patientId", patient.id);
+                              setSelectedPatientLabel(patient.dni ? `${patient.name} - ${patient.dni}` : patient.name);
+                              setPatientDropdownOpen(false);
+                              setPatientFirstname("");
+                              setPatientLastname("");
+                            }}
+                          >
+                            {patient.dni ? `${patient.name} - ${patient.dni}` : patient.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500">No se encontraron resultados</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {watch("patientId") && selectedPatientLabel && (
+                  <div className="p-2 border rounded-md bg-gray-50 text-sm">{selectedPatientLabel}</div>
+                )}
+                {errors.patientId && (
+                  <Label className="font-light text-red-500">{errors.patientId.message}</Label>
+                )}
+                <Label className="font-light text-slate-400">Busque y seleccione el paciente para la cita</Label>
+              </div>
+            ) : (
+              <SearchableSelect
+                id="patientId"
+                label="Paciente"
+                placeholder="Ingrese el DNI del paciente..."
+                value={watch("patientId")}
+                onValueChange={(value) => setValue("patientId", value)}
+                onSearch={onPatientDniSearch ?? onPatientSearch}
+                options={patientOptions.map((patient) => ({
+                  value: patient.id,
+                  label: patient.dni ? `${patient.name} - ${patient.dni}` : patient.name,
+                }))}
+                loading={patientSearchLoading}
+                readOnly={isViewMode || mode === "edit"}
+                helper="Busque y seleccione el paciente para la cita"
+                error={errors.patientId?.message}
+              />
+            )}
 
             {/* Búsqueda de Psicólogo */}
-            <SearchableSelect
-              id="psychologistId"
-              label="Psicólogo a cargo"
-              placeholder="Buscar psicólogo..."
-              value={watch("psychologistId")}
-              onValueChange={(value) => setValue("psychologistId", value)}
-              onSearch={onPsychologistSearch}
-              options={psychologistOptions.map(
-                ({ dni, firstName, id, lastName }) => ({
+            {!isViewMode && (
+              <div className="grid gap-2 my-2 w-full max-w-md">
+                <Select
+                  value={psychologistSearchType}
+                  onValueChange={(v) => setPsychologistSearchType(v as "DNI" | "NAME")}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NAME">Buscar psicólogo por Nombre</SelectItem>
+                    <SelectItem value="DNI">Buscar psicólogo por DNI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {!isViewMode && psychologistSearchType === "NAME" ? (
+              <div className="grid gap-2 my-2 w-full max-w-md" ref={psychologistSearchRef}>
+                <Label className="font-normal">Psicólogo a cargo</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nombre"
+                    value={psychologistFirstname}
+                    onChange={(e) => setPsychologistFirstname(e.target.value)}
+                    maxLength={40}
+                  />
+                  <Input
+                    placeholder="Apellido"
+                    value={psychologistLastname}
+                    onChange={(e) => setPsychologistLastname(e.target.value)}
+                    maxLength={40}
+                  />
+                </div>
+                {psychologistDropdownOpen && (
+                  <div className="relative">
+                    <div className="absolute top-0 left-0 right-0 z-50 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {psychologistSearchLoading ? (
+                        <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                        </div>
+                      ) : psychologistOptions.length > 0 ? (
+                        psychologistOptions.map(({ id, firstName, lastName, dni }) => (
+                          <div
+                            key={id}
+                            className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setValue("psychologistId", id);
+                              setSelectedPsychologistLabel(`${firstName} ${lastName} - DNI: ${dni}`);
+                              setPsychologistDropdownOpen(false);
+                              setPsychologistFirstname("");
+                              setPsychologistLastname("");
+                            }}
+                          >
+                            {`${firstName} ${lastName} - DNI: ${dni}`}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500">No se encontraron resultados</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {watch("psychologistId") && selectedPsychologistLabel && (
+                  <div className="p-2 border rounded-md bg-gray-50 text-sm">{selectedPsychologistLabel}</div>
+                )}
+                {errors.psychologistId && (
+                  <Label className="font-light text-red-500">{errors.psychologistId.message}</Label>
+                )}
+                <Label className="font-light text-slate-400">Busque y seleccione el psicólogo para la cita</Label>
+              </div>
+            ) : (
+              <SearchableSelect
+                id="psychologistId"
+                label="Psicólogo a cargo"
+                placeholder="Ingrese el DNI del psicólogo..."
+                value={watch("psychologistId")}
+                onValueChange={(value) => setValue("psychologistId", value)}
+                onSearch={onPsychologistDniSearch ?? onPsychologistSearch}
+                options={psychologistOptions.map(({ dni, firstName, id, lastName }) => ({
                   value: id,
                   label: `${firstName} ${lastName} - DNI: ${dni}`,
-                })
-              )}
-              loading={psychologistSearchLoading}
-              readOnly={isViewMode}
-              helper="Busque y seleccione el psicólogo para la cita"
-              error={errors.psychologistId?.message}
-            />
+                }))}
+                loading={psychologistSearchLoading}
+                readOnly={isViewMode}
+                helper="Busque y seleccione el psicólogo para la cita"
+                error={errors.psychologistId?.message}
+              />
+            )}
             {/* Ver horario de psicólogo - Button */}
             <Button
               type="button"

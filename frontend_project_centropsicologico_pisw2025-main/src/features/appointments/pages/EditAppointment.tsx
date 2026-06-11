@@ -115,8 +115,13 @@ export const EditAppointment = () => {
       return;
     }
 
-    const extractTime = (isoTime: string): string => isoTime.split("T")[1].substring(0, 5);
-
+    //rango Roto - correccion
+    const extractTime = (isoTime: string): string => {
+      const date = new Date(isoTime);
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    };
     const scheduleStart = extractTime(schedule.startTime);
     const scheduleEnd = extractTime(schedule.endTime);
     const isTimeInRange = endTime > startTime && startTime >= scheduleStart && endTime <= scheduleEnd;
@@ -218,9 +223,9 @@ export const EditAppointment = () => {
         onSave={form.handleSubmit(handleSave)}
         onCancel={handleCancel}
         loading={loading}
-        // Search handlers
-        onPatientSearch={() => {}} // Paciente no es editable
-        onPsychologistSearch={psychologistSearch.setSearchQuery}
+        // Search handlers (patient is read-only in edit mode)
+        onPsychologistDniSearch={psychologistSearch.setDniQuery}
+        onPsychologistNameSearch={(fn, ln) => { psychologistSearch.setFirstnameQuery(fn); psychologistSearch.setLastnameQuery(ln); }}
         onOfficeSearch={officeSearch.setSearch}
         // Date/Time handlers para búsquedas dinámicas
        /*  onPsychologistDateChange={handleDateChange}

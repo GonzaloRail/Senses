@@ -74,11 +74,19 @@ export const searchPsychologistsAvailable = async (
 
 export const searchPsychologistByName = async (searchQuery: string) => {
   const response = await api.get(`/api/v1/users/psychologist/search`, {
-    params: {
-      searchQuery,
-    },
+    params: { searchQuery },
   });
+  return response.data;
+};
 
+export const searchPsychologistByParams = async (params: {
+  dni?: string;
+  firstname?: string;
+  lastname?: string;
+}) => {
+  const response = await api.get(`/api/v1/users/psychologist/search`, {
+    params,
+  });
   return response.data;
 };
 

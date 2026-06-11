@@ -546,13 +546,32 @@ export const updateUserService = async (data: UpdateUserInput) => {
 
 export const getPsychologistsByNameService = async ({
   searchQuery,
+  dni,
+  firstname,
+  lastname,
 }: GetPsychologistByNameInput) => {
   try {
-    console.log("query", searchQuery);
+    const orConditions: object[] = [];
+
+    if (dni) {
+      orConditions.push({ dni: { contains: dni } });
+    }
+    if (searchQuery) {
+      orConditions.push(
+        { firstName: { contains: searchQuery, mode: "insensitive" } },
+        { lastName: { contains: searchQuery, mode: "insensitive" } }
+      );
+    }
+    if (firstname) {
+      orConditions.push({ firstName: { contains: firstname, mode: "insensitive" } });
+    }
+    if (lastname) {
+      orConditions.push({ lastName: { contains: lastname, mode: "insensitive" } });
+    }
+
     const psychologistsFound = await prisma.user.findMany({
       where: {
         isActive: true,
-
         roles: {
           some: {
             role: {
@@ -560,23 +579,7 @@ export const getPsychologistsByNameService = async ({
             },
           },
         },
-
-        ...(searchQuery && {
-          OR: [
-            {
-              firstName: {
-                contains: searchQuery,
-                mode: "insensitive", // No distingue entre mayúsculas y minúsculas
-              },
-            },
-            {
-              lastName: {
-                contains: searchQuery,
-                mode: "insensitive",
-              },
-            },
-          ],
-        }),
+        ...(orConditions.length > 0 && { OR: orConditions }),
       },
       select: {
         id: true,
