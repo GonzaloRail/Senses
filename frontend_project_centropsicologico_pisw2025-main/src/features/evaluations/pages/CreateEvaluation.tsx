@@ -18,24 +18,55 @@ import { useAuth } from "@/store/auth/auth.store";
 import { uploadFileToCloudStorage } from "@/shared/utils/uploadFileToCloudStorage";
 import { createFormTemplateApi } from "../api/formTemplatesApi";
 
+const mapFieldToBackend = (q: any, idx: number): any => {
+  let type = q.type;
+  if (type === "number") type = "NUMBER";
+  else if (type === "checkbox") type = "CHECKBOX";
+  else if (type === "select") type = "SELECT";
+  else if (type === "text") type = "TEXT";
+
+  return {
+    id: q.id,
+    label: q.label,
+    type: type,
+    required: q.required || false,
+    order: q.order !== undefined ? q.order : idx,
+    options: q.options || undefined,
+    placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
+    helpText: q.helpText,
+    isClinicalHistory: q.isClinicalHistory,
+  };
+};
+
 const mapFormQuestionsToFieldsSchema = (questionsJsonStr: string) => {
   try {
-    const questions = JSON.parse(questionsJsonStr);
-    return questions.map((q: any, idx: number) => {
-      let type: "TEXT" | "TEXTAREA" | "NUMBER" | "DATE" | "SELECT" | "RADIO" | "CHECKBOX" | "SCALE" = "TEXTAREA";
-      if (q.type === "number") type = "NUMBER";
-      else if (q.type === "checkbox") type = "CHECKBOX";
-      else if (q.type === "select") type = "SELECT";
+    const parsed = JSON.parse(questionsJsonStr);
+    
+    // Retrocompatibilidad con esquemas planos
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type !== undefined) {
+      return [
+        {
+          id: "default_section",
+          title: "Información General",
+          order: 0,
+          fields: parsed.map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+          subsections: [],
+        },
+      ];
+    }
 
-      return {
-        label: q.label,
-        type: type,
-        required: q.required || false,
-        order: idx,
-        options: q.options || undefined,
-        placeholder: q.placeholder || `Ingrese ${q.label.toLowerCase()}...`,
-      };
-    });
+    return parsed.map((sec: any, secIdx: number) => ({
+      id: sec.id,
+      title: sec.title || `Sección ${secIdx + 1}`,
+      order: sec.order !== undefined ? sec.order : secIdx,
+      fields: (sec.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      subsections: (sec.subsections || []).map((sub: any, subIdx: number) => ({
+        id: sub.id,
+        title: sub.title || `Subsección ${subIdx + 1}`,
+        order: sub.order !== undefined ? sub.order : subIdx,
+        fields: (sub.fields || []).map((q: any, idx: number) => mapFieldToBackend(q, idx)),
+      })),
+    }));
   } catch (e) {
     console.error("Error parsing templateContent", e);
     return [];
@@ -144,48 +175,53 @@ export const CreateEvaluation = () => {
 
         console.log("Tests a crear en Base de Datos:", testsWithUrls);
 
-        createTestsBatch(
-          { testsToCreate: testsWithUrls },
-          {
-            onSuccess: async (batchResponse) => {
-              // Si hay formularios dinámicos creados inline, los subimos a su respectiva API
-              const createdTests = (batchResponse as any).tests || [];
-              
-              await Promise.all(
-                createdTests.map(async (createdTest: any) => {
-                  const originalTest = data.psychologicalTests?.find(
-                    (t) => t.name === createdTest.name
-                  );
+        await new Promise<void>((resolve, reject) => {
+          createTestsBatch(
+            { testsToCreate: testsWithUrls },
+            {
+              onSuccess: async (batchResponse) => {
+                // Si hay formularios dinámicos creados inline, los subimos a su respectiva API
+                const createdTests = (batchResponse as any).tests || [];
+                
+                await Promise.all(
+                  createdTests.map(async (createdTest: any, index: number) => {
+                    const originalTest = data.psychologicalTests?.[index];
 
-                  if (originalTest && (originalTest as any).templateContent) {
-                    const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
-                    if (fieldsSchema.length > 0) {
-                      try {
-                        await createFormTemplateApi({
-                          formTemplate: {
-                            name: createdTest.name,
-                            description: createdTest.description || "",
-                            isDefault: false,
-                            fieldsSchema,
-                            createdById: user?.id || "",
-                            testId: createdTest.id,
-                          }
-                        });
-                      } catch (err) {
-                        console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                    if (originalTest && (originalTest as any).templateContent) {
+                      const fieldsSchema = mapFormQuestionsToFieldsSchema((originalTest as any).templateContent);
+                      if (fieldsSchema.length > 0) {
+                        try {
+                          await createFormTemplateApi({
+                            formTemplate: {
+                              name: createdTest.name,
+                              description: createdTest.description || "",
+                              isDefault: false,
+                              fieldsSchema,
+                              createdById: user?.id || "",
+                              testId: createdTest.id,
+                            }
+                          });
+                        } catch (err) {
+                          console.error("Error al registrar la plantilla digital de la prueba: " + createdTest.name, err);
+                        }
                       }
                     }
-                  }
-                })
-              );
+                  })
+                );
 
-              showAlert(
-                `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
-                "success"
-              );
-            },
-          }
-        );
+                showAlert(
+                  `Evaluación creada con ${testsWithUrls.length} prueba(s)`,
+                  "success"
+                );
+                resolve();
+              },
+              onError: (err) => {
+                console.error("Error al crear pruebas:", err);
+                reject(err);
+              }
+            }
+          );
+        });
       } else {
         showAlert("Evaluación creada correctamente", "success");
       }

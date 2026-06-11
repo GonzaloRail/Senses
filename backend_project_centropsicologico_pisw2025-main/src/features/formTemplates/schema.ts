@@ -33,9 +33,50 @@ export const formFieldSchema = z.object({
   scaleMax: z.number().int().optional(),
   /** Texto de ayuda visible debajo del campo */
   helpText: z.string().optional(),
+  /** 
+   * Indicador si el campo corresponde a la Historia Clínica (DNI).
+   * Permite al frontend marcar este campo para autocompletado y renderizado dinámico,
+   * evitando errores de validación de Zod en el backend cuando se guardan plantillas con este flag.
+   */
+  isClinicalHistory: z.boolean().optional(),
 });
 
 export type FormField = z.infer<typeof formFieldSchema>;
+
+// ─── Subsección (Subpunto) ────────────────────────────────────────────────────
+
+/**
+ * Agrupa campos bajo un subpunto dentro de una Sección.
+ * Contiene título, orden y su propio array de campos directos.
+ */
+export const subsectionSchema = z.object({
+  /** Si no se envía, el backend genera un UUID automáticamente */
+  id: z.string().min(1).optional(),
+  title: z.string().min(1, "El título de la subsección es obligatorio"),
+  order: z.number().int().min(0),
+  fields: z.array(formFieldSchema).optional(),
+});
+
+export type Subsection = z.infer<typeof subsectionSchema>;
+
+// ─── Sección (Punto) ──────────────────────────────────────────────────────────
+
+/**
+ * Representa un Punto/Sección de primer nivel dentro de la plantilla.
+ * Puede tener campos directos (fields) y/o subsecciones (subsections).
+ */
+export const sectionSchema = z.object({
+  /** Si no se envía, el backend genera un UUID automáticamente */
+  id: z.string().min(1).optional(),
+  title: z.string().min(1, "El título de la sección es obligatorio"),
+  order: z.number().int().min(0),
+  /** Campos que pertenecen directamente a esta sección (sin subsección) */
+  fields: z.array(formFieldSchema).optional(),
+  /** Subsecciones (Subpuntos) que agrupan campos de esta sección */
+  subsections: z.array(subsectionSchema).optional(),
+});
+
+export type Section = z.infer<typeof sectionSchema>;
 
 // ─── Paginación / listado ─────────────────────────────────────────────────────
 
@@ -88,8 +129,8 @@ export const createFormTemplateSchema = z.object({
     description: z.string().optional(),
     isDefault: z.boolean().optional(),
     fieldsSchema: z
-      .array(formFieldSchema)
-      .min(1, "La plantilla debe tener al menos un campo"),
+      .array(sectionSchema)
+      .min(1, "La plantilla debe tener al menos una sección"),
     createdById: z.string().uuid("CreatedBy ID must be a valid UUID"),
     /** ID del Test al que se vincula esta plantilla (opcional) */
     testId: z.string().uuid("Test ID must be a valid UUID").optional(),
@@ -111,7 +152,7 @@ export const updateFormTemplateSchema = z.object({
     description: z.string().optional(),
     isDefault: z.boolean().optional(),
     isActive: z.boolean().optional(),
-    fieldsSchema: z.array(formFieldSchema).min(1).optional(),
+    fieldsSchema: z.array(sectionSchema).min(1).optional(),
     /** Permite cambiar o desvincular el Test asociado */
     testId: z.string().uuid().nullable().optional(),
   }),

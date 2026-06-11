@@ -58,3 +58,19 @@ export function translateMaritalStatus(status: MaritalStatus): string {
       return "Desconocido";
   }
 }
+
+/**
+ * Formatea una fecha con hora en formato DD/MM/YYYY HH:MM am/pm
+ * Útil para mostrar cuándo se completó cada aplicación de un test.
+ */
+export function formatDateTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "pm" : "am";
+  const displayHour = (hours % 12 || 12).toString().padStart(2, "0");
+  return `${day}/${month}/${year} ${displayHour}:${minutes} ${ampm}`;
+}

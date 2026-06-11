@@ -8,16 +8,40 @@ import {
   CreateFormTemplateInput,
   UpdateFormTemplateInput,
   FormField,
+  Section,
+  Subsection,
 } from "./schema";
 
 /**
- * Garantiza que cada campo del formulario tenga un id único.
- * Si el campo no trae id (o está vacío), se genera un UUID automáticamente.
+ * Garantiza que cada elemento del árbol (Sección > Subsección > Campo) tenga
+ * un id único. Si el nodo no trae id (o está vacío), se genera un UUID
+ * automáticamente.
  */
-const normalizeFields = (fields: FormField[]): FormField[] =>
+
+/** Normaliza los campos directos de una sección o subsección */
+const normalizeFieldList = (fields: FormField[] = []): FormField[] =>
   fields.map((field) => ({
     ...field,
     id: field.id?.trim() ? field.id : randomUUID(),
+  }));
+
+/** Normaliza una subsección: asigna ID y normaliza sus campos */
+const normalizeSubsection = (sub: Subsection): Subsection => ({
+  ...sub,
+  id: sub.id?.trim() ? sub.id : randomUUID(),
+  fields: normalizeFieldList(sub.fields),
+});
+
+/**
+ * Normaliza el array de secciones de forma recursiva:
+ * Sección → Subsección → Campos.
+ */
+const normalizeFields = (sections: Section[]): Section[] =>
+  sections.map((section) => ({
+    ...section,
+    id: section.id?.trim() ? section.id : randomUUID(),
+    fields: normalizeFieldList(section.fields),
+    subsections: (section.subsections ?? []).map(normalizeSubsection),
   }));
 
 // ─── GET ALL (paginado, para admin) ──────────────────────────────────────────

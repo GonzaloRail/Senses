@@ -37,6 +37,55 @@ export interface Patient {
   clinicalHistoryId: string;
   clinicalHistory: ClinicalHistory;
 
+  intakeInfo?: {
+    livesWithText?: string | null;
+    childrenCount?: number | null;
+    guardianName?: string | null;
+    guardianPhone?: string | null;
+    mainConsultationReason?: string | null;
+    situationDurationText?: string | null;
+    hadPreviousTherapy?: boolean | null;
+    takesPsychiatricMedication?: boolean | null;
+    comparedOtherCenters?: boolean | null;
+    referredByName?: string | null;
+    attractionNote?: string | null;
+    incomeRange?: {
+      name?: string | null;
+      label?: string | null;
+    } | null;
+    extraData?: {
+      frontend?: Record<string, unknown>;
+      [key: string]: unknown;
+    } | null;
+    selectionsByGroup?: Record<string, unknown>;
+  } | null;
+
+  livesWith?: string;
+  numChildren?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  mainReason?: string;
+  howLong?: string;
+  previousTherapy?: string;
+  psychiatricMedication?: string;
+  urgencyLevel?: string;
+  preferredModality?: string;
+  preferredSchedule?: string;
+  requiredSpecialty?: string;
+  preferredContact?: string;
+  howFoundUs?: string;
+  whoReferred?: string;
+  whatAttractedAttention?: string;
+  comparedOtherCenters?: string;
+  acceptPromotions?: string;
+  employmentStatus?: string;
+  workSector?: string;
+  workMode?: string;
+  incomeRange?: string;
+  paymentMethods?: string;
+  acceptDataPolicy?: boolean;
+  acceptCommunications?: boolean;
+
   appointments: Appointment[];
 
   createdAt: Date;

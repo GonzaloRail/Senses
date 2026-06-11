@@ -41,6 +41,8 @@ async function main() {
   console.log("Starting full database seed...");
 
   // LIMPIEZA INICIAL (deleteMany)
+  await prisma.formSubmission.deleteMany();
+  await prisma.formTemplate.deleteMany();
   await prisma.patientTest.deleteMany();
   await prisma.test.deleteMany();
   await prisma.evaluation.deleteMany();

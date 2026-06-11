@@ -11,13 +11,29 @@ export interface FormFieldPayload {
   scaleMin?: number;
   scaleMax?: number;
   helpText?: string;
+  isClinicalHistory?: boolean;
+}
+
+export interface FormSubsectionPayload {
+  id?: string;
+  title: string;
+  order: number;
+  fields: FormFieldPayload[];
+}
+
+export interface FormSectionPayload {
+  id?: string;
+  title: string;
+  order: number;
+  fields?: FormFieldPayload[];
+  subsections?: FormSubsectionPayload[];
 }
 
 export interface CreateFormTemplatePayload {
   name: string;
   description?: string;
   isDefault?: boolean;
-  fieldsSchema: FormFieldPayload[];
+  fieldsSchema: FormSectionPayload[];
   createdById: string;
   testId?: string;
 }
@@ -27,7 +43,7 @@ export interface UpdateFormTemplatePayload {
   description?: string;
   isDefault?: boolean;
   isActive?: boolean;
-  fieldsSchema?: FormFieldPayload[];
+  fieldsSchema?: FormSectionPayload[];
   testId?: string | null;
 }
 
