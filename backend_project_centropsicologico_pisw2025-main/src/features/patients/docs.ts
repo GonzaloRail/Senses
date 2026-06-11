@@ -660,6 +660,8 @@ export const patientsDocs: SwaggerModuleDoc = {
   tag,
   endpoints: [
     secureEndpoint("get", "/api/v1/patients/download-report", tag, "Download patients Excel", {
+      description:
+        "Exports a workbook with a single patients sheet including patient data, grouped intake options and consents. Missing optional fields are exported as blank cells.",
       responses: {
         "200": binaryResponse(
           "Excel file",

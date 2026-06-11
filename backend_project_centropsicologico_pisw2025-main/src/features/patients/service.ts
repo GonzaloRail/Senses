@@ -1355,27 +1355,96 @@ export const getMyPatientListService = async ({
 };
 
 export const getPatientsForExcelService = async () => {
-  return prisma.patient.findMany({
-    select: {
-      firstName: true,
-      lastName: true,
-      dni: true,
-      gender: true,
-      birthdate: true,
-      educationLevel: true,
-      birthPlace: true,
-      occupation: true,
-      address: true,
-      maritalStatus: true,
-      religion: true,
-      occupationLocation: true,
-      phoneNumber: true,
-      parentFullName: true,
-      parentDni: true,
-      parentPhoneNumber: true,
-    },
-    orderBy: {
-      lastName: "asc",
-    },
-  });
+  const [patients, intakeOptionGroups, consentTypes] = await Promise.all([
+    prisma.patient.findMany({
+      include: {
+        district: {
+          select: {
+            id: true,
+            name: true,
+            province: {
+              select: {
+                id: true,
+                name: true,
+                region: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        psychologist: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            dni: true,
+            email: true,
+          },
+        },
+        clinicalHistory: {
+          select: {
+            id: true,
+            displayInt: true,
+          },
+        },
+        intakeInfo: {
+          include: {
+            incomeRange: true,
+            selections: {
+              include: {
+                intakeOption: {
+                  include: {
+                    group: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        patientConsents: {
+          include: {
+            consentType: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+      },
+      orderBy: [
+        {
+          lastName: "asc",
+        },
+        {
+          firstName: "asc",
+        },
+      ],
+    }),
+    prisma.intakeOptionGroup.findMany({
+      include: {
+        options: {
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
+      },
+      orderBy: {
+        code: "asc",
+      },
+    }),
+    prisma.consentType.findMany({
+      orderBy: {
+        code: "asc",
+      },
+    }),
+  ]);
+
+  return {
+    patients,
+    intakeOptionGroups,
+    consentTypes,
+  };
 };

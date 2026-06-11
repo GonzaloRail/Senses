@@ -48,7 +48,35 @@ export type PatientMinimal = Pick<
   "id" | "dni" | "firstName" | "lastName"
 >;
 
+type PatientExcelSelectionType = string;
+
+export type PatientExcelIntakeOption = {
+  id: string;
+  code: string;
+  name: string;
+  category?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type PatientExcelIntakeOptionGroup = {
+  id: string;
+  code: string;
+  name: string;
+  selectionType: PatientExcelSelectionType;
+  isActive: boolean;
+  options?: PatientExcelIntakeOption[];
+};
+
+export type PatientExcelConsentType = {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+};
+
 export type PatientExcel = {
+  id: string;
   firstName: string;
   lastName: string;
   dni: string;
@@ -65,4 +93,87 @@ export type PatientExcel = {
   parentFullName?: string | null;
   parentDni?: string | null;
   parentPhoneNumber?: string | null;
+  districtId: string;
+  district: {
+    id: string;
+    name: string;
+    province: {
+      id: string;
+      name: string;
+      region: {
+        id: string;
+        name: string;
+      };
+    };
+  };
+  psychologistId?: string | null;
+  psychologist?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    dni: string;
+    email: string;
+  } | null;
+  clinicalHistoryId: string;
+  clinicalHistory: {
+    id: string;
+    displayInt: number;
+  };
+  isActive: boolean;
+  intakeInfo?: {
+    id: string;
+    email?: string | null;
+    sex?: string | null;
+    livesWithText?: string | null;
+    childrenCount?: number | null;
+    guardianName?: string | null;
+    guardianPhone?: string | null;
+    mainConsultationReason?: string | null;
+    situationDurationText?: string | null;
+    hadPreviousTherapy?: boolean | null;
+    takesPsychiatricMedication?: boolean | null;
+    comparedOtherCenters?: boolean | null;
+    referredByName?: string | null;
+    referredByRelation?: string | null;
+    referredByPhone?: string | null;
+    attractionNote?: string | null;
+    incomeRangeId?: string | null;
+    incomeRange?: {
+      id: string;
+      label: string;
+      minAmount?: unknown;
+      maxAmount?: unknown;
+      sortOrder: number;
+      isActive: boolean;
+    } | null;
+    extraData?: unknown;
+    selections: {
+      intakeOptionId: string;
+      isPrimary: boolean;
+      notes?: string | null;
+      createdAt: Date;
+      intakeOption: PatientExcelIntakeOption & {
+        group: PatientExcelIntakeOptionGroup;
+      };
+    }[];
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+  patientConsents: {
+    id: string;
+    consentTypeId: string;
+    accepted: boolean;
+    policyVersion?: string | null;
+    acceptedAt?: Date | null;
+    createdAt: Date;
+    consentType: PatientExcelConsentType;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PatientExcelExportData = {
+  patients: PatientExcel[];
+  intakeOptionGroups: PatientExcelIntakeOptionGroup[];
+  consentTypes: PatientExcelConsentType[];
 };
