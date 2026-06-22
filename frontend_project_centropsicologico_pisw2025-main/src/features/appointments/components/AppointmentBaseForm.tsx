@@ -21,6 +21,8 @@ import type {
 } from "@/shared/interfaces/models";
 import { TextareaWithHelper } from "@/shared/components/TextareaWithHelper";
 import RadioGroupWithHelper from "@/shared/components/RadioGroupWithHelper";
+import { PatientSearchSelect } from "./PatientSearchSelect";
+import type { PatientSearchQuery } from "@/features/patients/api/patientsApi";
 
 export type FormMode = "view" | "edit" | "create";
 export interface BaseFormProps {
@@ -79,11 +81,9 @@ export const AppointmentBaseForm = ({
   onPsychologistEndTimeChange,
   patientOptions,
   psychologistOptions,
-  officeOptions,
   assignedOffice,
   patientSearchLoading = false,
   psychologistSearchLoading = false,
-  officeSearchLoading = false,
   appointmentStatus,
 }: BaseFormProps) => {
   const [patientSearchType, setPatientSearchType] = useState<"DNI" | "NAME">("NAME");

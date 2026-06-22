@@ -137,7 +137,7 @@ export const SearchableSelect = forwardRef<
     // Si es modo solo lectura, usar el mismo patrón que InputWithHelper
     if (readOnly) {
       return (
-        <div className="grid gap-2 my-2 w-full max-w-md">
+        <div className={`grid gap-2 my-2 w-full max-w-md ${className ?? ""}`}>
           <Label className="font-normal">{label}</Label>
           <div className="p-2 border rounded-md bg-gray-50">
             {selectedLabel || "No seleccionado"}
@@ -147,7 +147,7 @@ export const SearchableSelect = forwardRef<
     }
 
     return (
-      <div className="grid gap-2 my-2 w-full max-w-md" ref={containerRef}>
+      <div className={`grid gap-2 my-2 w-full max-w-md ${className ?? ""}`} ref={containerRef}>
         <Label className="font-normal" htmlFor={id}>
           {label}
         </Label>
