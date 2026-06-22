@@ -205,7 +205,6 @@ export const CreateAppointment = () => {
         onPatientNameSearch={(fn, ln) => { patientSearch.setFirstnameQuery(fn); patientSearch.setLastnameQuery(ln); }}
         onPsychologistDniSearch={psychologistSearch.setDniQuery}
         onPsychologistNameSearch={(fn, ln) => { psychologistSearch.setFirstnameQuery(fn); psychologistSearch.setLastnameQuery(ln); }}
-        onOfficeSearch={officeSearch.setSearch}
         // Date/Time handlers for psychologist search
         //onPsychologistDateChange={handleDateChange}
         //onPsychologistStartTimeChange={}

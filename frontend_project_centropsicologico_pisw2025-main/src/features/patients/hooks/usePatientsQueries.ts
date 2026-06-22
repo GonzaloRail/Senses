@@ -68,10 +68,17 @@ export const usePatientSearchQuery = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const setDniQuery = (dni: string) => setSearchFilters(prev => ({ ...prev, dni }));
+  const setFirstnameQuery = (firstname: string) => setSearchFilters(prev => ({ ...prev, firstname }));
+  const setLastnameQuery = (lastname: string) => setSearchFilters(prev => ({ ...prev, lastname }));
+
   return {
     patients,
     isLoading,
     error,
     setSearchFilters,
+    setDniQuery,
+    setFirstnameQuery,
+    setLastnameQuery,
   };
 };

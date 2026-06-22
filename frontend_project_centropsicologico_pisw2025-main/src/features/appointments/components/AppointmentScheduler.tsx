@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FaChevronLeft, FaChevronRight, FaTrashAlt } from "react-icons/fa";
-import { Copy } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -246,11 +246,57 @@ export const AppointmentScheduler = () => {
   const createAppointmentMutation = useCreateAppointment();
   const updateAppointmentStatus = useUpdateAppointmentStatus();
 
+  // Psychologist search by DNI/Name/Lastname
+  const [psychologistSearchType, setPsychologistSearchType] = useState<"DNI" | "NAME">("NAME");
+  const [psychologistDni, setPsychologistDni] = useState("");
+  const [psychologistFirstname, setPsychologistFirstname] = useState("");
+  const [psychologistLastname, setPsychologistLastname] = useState("");
+  const [psychologistDropdownOpen, setPsychologistDropdownOpen] = useState(false);
+  const [selectedPsychologistLabel, setSelectedPsychologistLabel] = useState("");
+  const psychologistSearchRef = useRef<HTMLDivElement>(null);
+
+  // Sync DNI query
   useEffect(() => {
-    if (!selectedPsychologistId && psychologistSearch.psychologists.length > 0) {
-      setSelectedPsychologistId(psychologistSearch.psychologists[0].id);
-    }
-  }, [psychologistSearch.psychologists, selectedPsychologistId]);
+    if (psychologistSearchType !== "DNI") return;
+    psychologistSearch.setDniQuery(psychologistDni);
+    psychologistSearch.setFirstnameQuery("");
+    psychologistSearch.setLastnameQuery("");
+  }, [psychologistSearchType, psychologistDni, psychologistSearch]);
+
+  // Debounced NAME search (2 fields) + open dropdown
+  useEffect(() => {
+    if (psychologistSearchType !== "NAME") return;
+    const timer = setTimeout(() => {
+      if (psychologistFirstname.trim() || psychologistLastname.trim()) {
+        psychologistSearch.setDniQuery("");
+        psychologistSearch.setFirstnameQuery(psychologistFirstname.trim());
+        psychologistSearch.setLastnameQuery(psychologistLastname.trim());
+        setPsychologistDropdownOpen(true);
+      } else {
+        setPsychologistDropdownOpen(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [psychologistSearchType, psychologistFirstname, psychologistLastname, psychologistSearch]);
+
+  // Reset fields when search type changes
+  useEffect(() => {
+    setPsychologistFirstname("");
+    setPsychologistLastname("");
+    setPsychologistDni("");
+    setPsychologistDropdownOpen(false);
+  }, [psychologistSearchType]);
+
+  // Close NAME dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (psychologistSearchRef.current && !psychologistSearchRef.current.contains(e.target as Node)) {
+        setPsychologistDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const { data: selectedPsychologist, isLoading: psychologistLoading } = useQuery<User>({
     queryKey: ["appointment-scheduler", "psychologist", selectedPsychologistId],
@@ -753,29 +799,98 @@ export const AppointmentScheduler = () => {
           <main className="custom-scroll flex min-h-[560px] flex-1 flex-col overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col gap-4 border-b border-slate-200 p-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex-1">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                <SearchableSelect
+                  id="psychologist-search-type"
+                  label={`Buscar psicólogo por ${psychologistSearchType === "NAME" ? "Nombre" : "DNI"}`}
+                  placeholder={psychologistSearchType === "NAME" ? "Nombre y Apellido" : "DNI"}
+                  value={psychologistSearchType}
+                  onValueChange={(v) => setPsychologistSearchType(v as "DNI" | "NAME")}
+                  options={[
+                    { value: "NAME", label: "Buscar psicólogo por Nombre" },
+                    { value: "DNI", label: "Buscar psicólogo por DNI" },
+                  ]}
+                />
+
+                {psychologistSearchType === "NAME" ? (
+                  <div className="space-y-2" ref={psychologistSearchRef}>
+                    <Label htmlFor="psychologist-input" className="text-sm font-medium">Psicólogo a cargo</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="psychologist-input"
+                        placeholder="Nombre"
+                        value={psychologistFirstname}
+                        onChange={(e) => setPsychologistFirstname(e.target.value)}
+                        maxLength={40}
+                      />
+                      <Input
+                        placeholder="Apellido"
+                        value={psychologistLastname}
+                        onChange={(e) => setPsychologistLastname(e.target.value)}
+                        maxLength={40}
+                      />
+                    </div>
+                    {psychologistDropdownOpen && (
+                      <div className="relative">
+                        <div className="absolute left-0 right-0 top-0 z-50 max-h-60 overflow-auto rounded-md border border-slate-300 bg-white shadow-lg">
+                          {psychologistSearch.isLoading ? (
+                            <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
+                              <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                            </div>
+                          ) : psychologistSearch.psychologists.length > 0 ? (
+                            psychologistSearch.psychologists.map((psychologist) => (
+                              <div
+                                key={psychologist.id}
+                                className="cursor-pointer px-3 py-2 text-sm hover:bg-slate-100"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setSelectedPsychologistId(psychologist.id);
+                                  setSelectedPsychologistLabel(
+                                    `${psychologist.firstName} ${psychologist.lastName} - DNI: ${psychologist.dni}`
+                                  );
+                                  setCopiedAppointment(null);
+                                  setFeedback("");
+                                  setPsychologistDropdownOpen(false);
+                                  setPsychologistFirstname("");
+                                  setPsychologistLastname("");
+                                }}
+                              >
+                                {`${psychologist.firstName} ${psychologist.lastName} - DNI: ${psychologist.dni}`}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-slate-500">No se encontraron resultados</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {selectedPsychologistId && selectedPsychologistLabel && (
+                      <div className="rounded-md border bg-slate-50 p-2 text-sm">{selectedPsychologistLabel}</div>
+                    )}
+                    <p className="text-sm font-light text-slate-400">Busque y seleccione el psicólogo para la cita</p>
+                  </div>
+                ) : (
                   <SearchableSelect
-                    id="appointment-scheduler-psychologist"
-                    label="Disponibilidad del psicólogo"
-                    placeholder="Buscar psicólogo..."
+                    id="psychologist-input"
+                    label="Psicólogo a cargo"
+                    placeholder="Ingrese el DNI del psicólogo..."
                     value={selectedPsychologistId}
                     onValueChange={(value) => {
                       setSelectedPsychologistId(value);
                       setCopiedAppointment(null);
                       setFeedback("");
                     }}
-                    onSearch={psychologistSearch.setSearchQuery}
+                    onSearch={setPsychologistDni}
                     options={psychologistSearch.psychologists.map((psychologist) => ({
                       value: psychologist.id,
                       label: `${psychologist.firstName} ${psychologist.lastName} - DNI: ${psychologist.dni}`,
                     }))}
                     loading={psychologistSearch.isLoading}
-                    helper="Seleccione un psicólogo para ver su disponibilidad y citas programadas"
+                    helper="Busque y seleccione el psicólogo para la cita"
                   />
-                  {isBusy && <Loading message="Cargando horario..." />}
-                </div>
+                )}
+                {isBusy && <Loading message="Cargando horario..." />}
 
-                <h2 className="mt-2 text-lg font-semibold text-senses-primary">
+                <h2 className="mt-4 text-lg font-semibold text-senses-primary">
                   Disponibilidad de {selectedPsychologistName}
                 </h2>
                 <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-600">

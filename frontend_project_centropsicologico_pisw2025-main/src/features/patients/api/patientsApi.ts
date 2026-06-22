@@ -74,8 +74,8 @@ export const searchPatientsApi = async ({
   const response = await api.get(`/api/v1/patients/search`, {
     params: {
       dni,
-      firstname: name,
-      lastname: name,
+      firstname,
+      lastname,
     },
   });
   return response.data;

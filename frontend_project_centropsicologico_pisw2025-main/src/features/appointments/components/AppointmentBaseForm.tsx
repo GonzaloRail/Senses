@@ -21,8 +21,6 @@ import type {
 } from "@/shared/interfaces/models";
 import { TextareaWithHelper } from "@/shared/components/TextareaWithHelper";
 import RadioGroupWithHelper from "@/shared/components/RadioGroupWithHelper";
-import { PatientSearchSelect } from "./PatientSearchSelect";
-import type { PatientSearchQuery } from "@/features/patients/api/patientsApi";
 
 export type FormMode = "view" | "edit" | "create";
 export interface BaseFormProps {
@@ -41,7 +39,6 @@ export interface BaseFormProps {
   onPsychologistSearch?: (query: string) => void;
   onPsychologistDniSearch?: (dni: string) => void;
   onPsychologistNameSearch?: (firstname: string, lastname: string) => void;
-  onOfficeSearch: (query: string) => void;
 
   // Date/Time handlers for psychologist search
   onPsychologistDateChange?: (date: string) => void;
@@ -75,7 +72,6 @@ export const AppointmentBaseForm = ({
   onPsychologistSearch,
   onPsychologistDniSearch,
   onPsychologistNameSearch,
-  onOfficeSearch,
   onPsychologistDateChange,
   onPsychologistStartTimeChange,
   onPsychologistEndTimeChange,

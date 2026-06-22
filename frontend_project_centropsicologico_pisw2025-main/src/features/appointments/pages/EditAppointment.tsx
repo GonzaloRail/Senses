@@ -226,7 +226,6 @@ export const EditAppointment = () => {
         // Search handlers (patient is read-only in edit mode)
         onPsychologistDniSearch={psychologistSearch.setDniQuery}
         onPsychologistNameSearch={(fn, ln) => { psychologistSearch.setFirstnameQuery(fn); psychologistSearch.setLastnameQuery(ln); }}
-        onOfficeSearch={officeSearch.setSearch}
         // Date/Time handlers para búsquedas dinámicas
        /*  onPsychologistDateChange={handleDateChange}
         onPsychologistStartTimeChange={handleStartTimeChange}

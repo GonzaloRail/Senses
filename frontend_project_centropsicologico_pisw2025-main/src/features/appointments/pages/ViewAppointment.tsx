@@ -117,7 +117,6 @@ export const ViewAppointment = () => {
         // Props para búsquedas (no activas en modo view)
         onPatientSearch={() => {}} // No funcional en modo view
         onPsychologistSearch={() => {}}
-        onOfficeSearch={() => {}}
         // Opciones pre-cargadas para mostrar
         patientOptions={[
           {
