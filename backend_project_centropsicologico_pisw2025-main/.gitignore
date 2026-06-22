@@ -7,3 +7,5 @@ generated
 postgres
 dist
 uploads
+graphify-out
+CLAUDE.md
