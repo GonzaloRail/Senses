@@ -154,21 +154,28 @@ export function getSlotKey(dateKey: string, startHour: number) {
 
 function extractHour(value?: string) {
   if (!value) return 0;
-  const time = value.includes("T") ? value.split("T")[1] : value;
-  return Number(time.slice(0, 2));
+  const timePart = value.includes("T") ? value.split("T")[1] : value;
+  const hour = parseInt(timePart.substring(0, 2), 10);
+  return Number.isFinite(hour) ? hour : 0;
 }
 
 export function normalizeWorkSchedule(workSchedule?: WorkSchedule[]) {
   return (workSchedule ?? [])
     .map((schedule) => {
+      const startHour = extractHour(schedule.startTime);
+      let endHour = extractHour(schedule.endTime);
+
+      // ponytail: backend stores endTime with next-day date when schedule crosses midnight
+      if (endHour < startHour) endHour += 24;
+
       const officeId = schedule.officeId ?? schedule.office?.id ?? "";
 
       return {
         weekdayIndex: weekdayToIndex[schedule.day],
         officeId,
         officeName: schedule.office?.name ?? "Pendiente",
-        startHour: extractHour(schedule.startTime),
-        endHour: extractHour(schedule.endTime),
+        startHour,
+        endHour,
       };
     })
     .filter((schedule) => Number.isFinite(schedule.weekdayIndex) && schedule.officeId);

@@ -333,7 +333,9 @@ export const AppointmentScheduler = () => {
     : "Seleccione un psicólogo";
 
   const appointments = useMemo(
-    () => appointmentEvents.map(mapEventToAppointment),
+    () => appointmentEvents
+      .filter((event) => event.resource.status !== "CANCELED")
+      .map(mapEventToAppointment),
     [appointmentEvents]
   );
 
